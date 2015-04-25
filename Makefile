@@ -1,6 +1,6 @@
 ## ffmpeg
 
-FFMPEG_VERSION    = 2.6.1
+FFMPEG_VERSION    = 2.6.2
 LAME_VERSION      = 3.99.5
 X264_VERSION      = stable
 X265_VERSION      = 9f0324125f53
@@ -43,7 +43,7 @@ lib/libx265.a:
 	cmake source -DCMAKE_INSTALL_PREFIX=$(PWD) -DCMAKE_BUILD_TYPE=Release \
 		-DENABLE_CLI=OFF -DENABLE_SHARED=OFF && \
 	$(MAKE) install clean
-	sed -i '.bak' -e 's/^\(Libs:.*\)$$/\1 -lstdc++/' lib/pkgconfig/x265.pc
+	sed -i'.bak' -e 's/^\(Libs:.*\)$$/\1 -lstdc++/' lib/pkgconfig/x265.pc
 
 lib/libvpx.a:
 	cd src/libvpx-$(LIBVPX_VERSION) && \
