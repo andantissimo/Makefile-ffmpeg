@@ -1,8 +1,8 @@
 ## ffmpeg
 
-FFMPEG_VERSION   = 2.8.2
+FFMPEG_VERSION   = 2.8.3
 LAME_VERSION     = 3.99.5
-X264_VERSION     = snapshot-20151120-2245-stable
+X264_VERSION     = snapshot-20151201-2245-stable
 X265_VERSION     = 11047
 FDK_AAC_VERSION  = 0.1.4
 RTMPDUMP_VERSION = 20150114
@@ -19,7 +19,7 @@ bin/ffmpeg: lib/libx264.a \
 	export CFLAGS=-I$(PWD)/include && \
 	./configure --prefix=$(PWD) \
 		--enable-static --disable-shared --enable-runtime-cpudetect \
-		--disable-debug --disable-doc --disable-network \
+		--disable-debug --disable-doc \
 		--disable-ffplay --disable-ffprobe --disable-ffserver \
 		--enable-gpl --enable-nonfree \
 		--enable-libx264 \
