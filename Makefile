@@ -33,14 +33,13 @@ bin/ffmpeg: lib/libx264.a \
 
 lib/libx264.a:
 	cd src/x264-$(X264_VERSION) && \
-	./configure --prefix=$(PWD) --enable-static --enable-strip \
-		--disable-cli && \
+	./configure --prefix=$(PWD) --enable-static --enable-strip && \
 	$(MAKE) install clean
 
 lib/libx265.a:
 	cd src/x265_$(X265_VERSION) && \
 	cmake source -DCMAKE_INSTALL_PREFIX=$(PWD) -DCMAKE_BUILD_TYPE=Release \
-		-DENABLE_CLI=OFF -DENABLE_SHARED=OFF && \
+		-DENABLE_SHARED=OFF && \
 	$(MAKE) install clean
 	sed -e 's@^\(Libs:.*\)$$@\1 -lstdc++@' \
 	    -i'.bak' lib/pkgconfig/x265.pc
