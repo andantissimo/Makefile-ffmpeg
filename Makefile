@@ -5,6 +5,7 @@ LAME_VERSION     = 3.99.5
 X264_VERSION     = snapshot-20160103-2245-stable
 X265_VERSION     = 1.9
 FDK_AAC_VERSION  = 0.1.4
+FREETYPE_VERSION = 2.6.3
 RTMPDUMP_VERSION = 20150114
 
 all: bin/ffmpeg
@@ -13,6 +14,7 @@ bin/ffmpeg: lib/libx264.a \
             lib/libx265.a \
             lib/libfdk-aac.a \
             lib/libmp3lame.a \
+            lib/libfreetype.a \
             lib/librtmp.a
 	cd src/ffmpeg-$(FFMPEG_VERSION) && \
 	export PKG_CONFIG_PATH=$(PWD)/lib/pkgconfig && \
@@ -25,6 +27,7 @@ bin/ffmpeg: lib/libx264.a \
 		--enable-libx265 \
 		--enable-libfdk-aac \
 		--enable-libmp3lame \
+		--enable-libfreetype \
 		--enable-librtmp \
 		$(FFMPEG_OPTIONS) && \
 	$(MAKE) install clean
@@ -51,6 +54,12 @@ lib/libmp3lame.a:
 	cd src/lame-$(LAME_VERSION) && \
 	./configure --prefix=$(PWD) --enable-static --disable-shared \
 		--enable-nasm && \
+	$(MAKE) install clean
+
+lib/libfreetype.a:
+	cd src/freetype-$(FREETYPE_VERSION) && \
+	./configure --prefix=$(PWD) --enable-static --disable-shared \
+		--without-png --without-harfbuzz && \
 	$(MAKE) install clean
 
 lib/librtmp.a:
