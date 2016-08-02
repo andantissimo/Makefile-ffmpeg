@@ -1,18 +1,20 @@
 ## ffmpeg
 
-FFMPEG_VERSION   = 3.0
+FFMPEG_VERSION   = 3.1.1
+X264_VERSION     = snapshot-20160801-2245-stable
+X265_VERSION     = 2.0
+VPX_VERSION      = 1.6.0
+OPUS_VERSION     = 1.1.3
 LAME_VERSION     = 3.99.5
-X264_VERSION     = snapshot-20160103-2245-stable
-X265_VERSION     = 1.9
-FDK_AAC_VERSION  = 0.1.4
-FREETYPE_VERSION = 2.6.3
+FREETYPE_VERSION = 2.6.5
 RTMPDUMP_VERSION = 20150114
 
 all: bin/ffmpeg
 
 bin/ffmpeg: lib/libx264.a \
             lib/libx265.a \
-            lib/libfdk-aac.a \
+            lib/libvpx.a \
+            lib/libopus.a \
             lib/libmp3lame.a \
             lib/libfreetype.a \
             lib/librtmp.a
@@ -22,10 +24,11 @@ bin/ffmpeg: lib/libx264.a \
 	./configure --prefix=$(PWD) --enable-static --disable-shared \
 		--disable-debug --disable-ffplay --disable-ffserver \
 		--enable-runtime-cpudetect \
-		--enable-gpl --enable-nonfree \
+		--enable-gpl \
 		--enable-libx264 \
 		--enable-libx265 \
-		--enable-libfdk-aac \
+		--enable-libvpx \
+		--enable-libopus \
 		--enable-libmp3lame \
 		--enable-libfreetype \
 		--enable-librtmp \
@@ -34,26 +37,38 @@ bin/ffmpeg: lib/libx264.a \
 
 lib/libx264.a:
 	cd src/x264-$(X264_VERSION) && \
-	./configure --prefix=$(PWD) --enable-static --enable-strip && \
+	./configure --prefix=$(PWD) --enable-static --disable-shared \
+		--enable-strip --disable-cli && \
 	$(MAKE) install clean
 
 lib/libx265.a:
 	cd src/x265_$(X265_VERSION) && \
 	cmake source -DCMAKE_INSTALL_PREFIX=$(PWD) -DCMAKE_BUILD_TYPE=Release \
-		-DENABLE_SHARED=OFF && \
+		-DENABLE_SHARED=OFF -DENABLE_CLI=OFF && \
 	$(MAKE) install clean
 	sed -e 's@^\(Libs:.*\)$$@\1 -lstdc++@' \
 	    -i'.bak' lib/pkgconfig/x265.pc
 
-lib/libfdk-aac.a:
-	cd src/fdk-aac-$(FDK_AAC_VERSION) && \
-	./configure --prefix=$(PWD) --enable-static --disable-shared && \
+lib/libvpx.a:
+	cd src/libvpx-$(VPX_VERSION) && \
+	./configure --prefix=$(PWD) --enable-static --disable-shared \
+		--disable-dependency-tracking \
+		--disable-examples --disable-docs \
+		--enable-runtime-cpu-detect && \
+	$(MAKE) install clean
+
+lib/libopus.a:
+	cd src/opus-$(OPUS_VERSION) && \
+	./configure --prefix=$(PWD) --enable-static --disable-shared \
+		--disable-dependency-tracking \
+		--disable-doc --disable-extra-programs && \
 	$(MAKE) install clean
 
 lib/libmp3lame.a:
 	cd src/lame-$(LAME_VERSION) && \
 	./configure --prefix=$(PWD) --enable-static --disable-shared \
-		--enable-nasm && \
+		--disable-dependency-tracking \
+		--enable-nasm --disable-frontend && \
 	$(MAKE) install clean
 
 lib/libfreetype.a:
