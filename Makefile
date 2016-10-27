@@ -1,6 +1,6 @@
 ## ffmpeg
 
-FFMPEG_VERSION   = 3.1.4
+FFMPEG_VERSION   = 3.1.5
 X264_VERSION     = snapshot-20160922-2245-stable
 X265_VERSION     = 2.1
 VPX_VERSION      = 1.6.0
