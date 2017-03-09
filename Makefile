@@ -1,8 +1,8 @@
 ## ffmpeg
 
-FFMPEG_VERSION   = 3.2.2
-X264_VERSION     = snapshot-20161202-2245-stable
-X265_VERSION     = 2.2
+FFMPEG_VERSION   = 3.2.4
+X264_VERSION     = snapshot-20170122-2245-stable
+X265_VERSION     = 2.3
 VPX_VERSION      = 1.6.1
 OPUS_VERSION     = 1.2-alpha
 LAME_VERSION     = 3.99.5
