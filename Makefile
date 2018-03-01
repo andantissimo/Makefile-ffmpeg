@@ -1,12 +1,12 @@
 ## ffmpeg
 
-FFMPEG_VERSION   = 3.4
-X264_VERSION     = snapshot-20170522-2245-stable
-X265_VERSION     = 2.5
-VPX_VERSION      = 1.6.1
+FFMPEG_VERSION   = 3.4.2
+X264_VERSION     = snapshot-20171225-2245-stable
+X265_VERSION     = 2.6
+VPX_VERSION      = 1.7.0
 OPUS_VERSION     = 1.2.1
-LAME_VERSION     = 3.99.5
-FREETYPE_VERSION = 2.8.1
+LAME_VERSION     = 3.100
+FREETYPE_VERSION = 2.9
 RTMPDUMP_VERSION = 20150114
 
 all: bin/ffmpeg
@@ -42,7 +42,7 @@ lib/libx264.a:
 	$(MAKE) install clean
 
 lib/libx265.a:
-	cd src/x265_$(X265_VERSION) && \
+	cd src/x265_v$(X265_VERSION) && \
 	cmake source -DCMAKE_INSTALL_PREFIX=$(PWD) -DCMAKE_BUILD_TYPE=Release \
 		-DENABLE_SHARED=OFF -DENABLE_CLI=OFF && \
 	$(MAKE) install clean
