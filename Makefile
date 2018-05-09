@@ -9,9 +9,6 @@ VPX_VERSION      = 1.7.0
 X264_VERSION     = snapshot-20180118-2245
 X265_VERSION     = 2.7
 OPENSSL_VERSION  = 1.0.2o
-OPENSSL_ARCH     = $(shell [ `uname` = Darwin ] \
-                     && echo 'darwin64-x86_64-cc enable-cc_nistp_64_gcc_128' \
-                     || echo 'linux-generic64')
 
 all: bin/ffmpeg
 
@@ -114,14 +111,13 @@ lib/libx265.a:
 
 lib/libssl.a:
 	cd src/openssl-$(OPENSSL_VERSION) && \
-	perl ./Configure --prefix=$(PWD) --openssldir=$(PWD)/etc/ssl \
-		no-comp \
+	./config --prefix=$(PWD) --openssldir=$(PWD)/etc/ssl \
+		shared \
 		no-ssl2 \
 		no-ssl3 \
+		no-comp \
 		no-zlib \
-		no-shared \
-		enable-cms \
-		$(OPENSSL_ARCH) && \
+		enable-cms && \
 	$(MAKE) depend && \
 	$(MAKE) && \
 	$(MAKE) install MANDIR=$(PWD)/share/man && \
