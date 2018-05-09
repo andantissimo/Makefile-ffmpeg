@@ -8,6 +8,10 @@ RTMPDUMP_VERSION = 20150114
 VPX_VERSION      = 1.7.0
 X264_VERSION     = snapshot-20180118-2245
 X265_VERSION     = 2.7
+OPENSSL_VERSION  = 1.0.2o
+OPENSSL_ARCH     = $(shell [ `uname` = Darwin ] \
+                     && echo 'darwin64-x86_64-cc enable-cc_nistp_64_gcc_128' \
+                     || echo 'linux-generic64')
 
 all: bin/ffmpeg
 
@@ -18,7 +22,8 @@ bin/ffmpeg: lib/libaom.a \
             lib/librtmp.a \
             lib/libvpx.a \
             lib/libx264.a \
-            lib/libx265.a
+            lib/libx265.a \
+            lib/libssl.a
 	cd src/ffmpeg-$(FFMPEG_VERSION) && \
 	export PKG_CONFIG_PATH=$(PWD)/lib/pkgconfig && \
 	export CFLAGS=-I$(PWD)/include && \
@@ -106,3 +111,18 @@ lib/libx265.a:
 	$(MAKE) install clean
 	sed -e 's@^\(Libs:.*\)$$@\1 -lstdc++ -lm -ldl -lpthread@' \
 	    -i'.bak' lib/pkgconfig/x265.pc
+
+lib/libssl.a:
+	cd src/openssl-$(OPENSSL_VERSION) && \
+	perl ./Configure --prefix=$(PWD) --openssldir=$(PWD)/etc/ssl \
+		no-comp \
+		no-ssl2 \
+		no-ssl3 \
+		no-zlib \
+		no-shared \
+		enable-cms \
+		$(OPENSSL_ARCH) && \
+	$(MAKE) depend && \
+	$(MAKE) && \
+	$(MAKE) install MANDIR=$(PWD)/share/man && \
+	$(MAKE) clean
