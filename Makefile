@@ -2,12 +2,12 @@
 
 FFMPEG_VERSION   = 4.0
 FDK_AAC_VERSION  = 0.1.6
-FREETYPE_VERSION = 2.9
+FREETYPE_VERSION = 2.9.1
 OPUS_VERSION     = 1.2.1
 RTMPDUMP_VERSION = 20150114
 VPX_VERSION      = 1.7.0
 X264_VERSION     = snapshot-20180118-2245
-X265_VERSION     = 2.7
+X265_VERSION     = 2.8
 OPENSSL_VERSION  = 1.0.2o
 OPENSSL_ARCH     = $(shell [ `uname` = Darwin ] \
                      && echo 'darwin64-x86_64-cc enable-cc_nistp_64_gcc_128' \
