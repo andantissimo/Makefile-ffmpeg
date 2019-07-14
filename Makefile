@@ -11,7 +11,7 @@ X264_VERSION     = snapshot-20190304-2245-stable
 X265_VERSION     = 3.1.1
 OPENSSL_VERSION  = 1.1.1c
 OPENSSL_ARCH     = $(shell [ `uname` = Darwin ] \
-                     && echo 'darwin64-x86_64-cc enable-cc_nistp_64_gcc_128' \
+                     && echo 'darwin64-x86_64-cc' \
                      || echo 'linux-generic64')
 
 all: bin/ffmpeg
