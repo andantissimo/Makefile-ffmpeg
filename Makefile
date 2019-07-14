@@ -17,6 +17,9 @@ endif
 ifeq ($(shell uname),FreeBSD)
 	OPENSSL_ARCH = BSD-x86_64
 endif
+ifeq ($(shell uname),Linux)
+	FFMPEG_OPTIONS += --extra-libs='-ldl -lpthread'
+endif
 
 all: bin/ffmpeg
 
