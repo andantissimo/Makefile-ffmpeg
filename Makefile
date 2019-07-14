@@ -1,14 +1,15 @@
 ## ffmpeg
 
-FFMPEG_VERSION   = 4.1.2
+FFMPEG_VERSION   = 4.1.4
 FDK_AAC_VERSION  = 2.0.0
-FREETYPE_VERSION = 2.10.0
-OPUS_VERSION     = 1.3
+FREETYPE_VERSION = 2.10.1
+OPUS_VERSION     = 1.3.1
 RTMPDUMP_VERSION = 20150114
+AOM_VERSION      = 1.0.0-errata1
 VPX_VERSION      = 1.8.0
 X264_VERSION     = snapshot-20190304-2245-stable
-X265_VERSION     = 3.0
-OPENSSL_VERSION  = 1.0.2r
+X265_VERSION     = 3.1.1
+OPENSSL_VERSION  = 1.0.2s
 OPENSSL_ARCH     = $(shell [ `uname` = Darwin ] \
                      && echo 'darwin64-x86_64-cc enable-cc_nistp_64_gcc_128' \
                      || echo 'linux-generic64')
@@ -53,9 +54,9 @@ bin/ffmpeg: lib/libaom.a \
 	$(MAKE) install clean
 
 lib/libaom.a:
-	mkdir -p tmp/aom
-	cd tmp/aom && \
-	cmake $(PWD)/src/aom -DCMAKE_INSTALL_PREFIX=$(PWD) \
+	mkdir -p tmp/libaom
+	cd tmp/libaom && \
+	cmake $(PWD)/src/libaom-$(AOM_VERSION) -DCMAKE_INSTALL_PREFIX=$(PWD) \
 		-DINCLUDE_INSTALL_DIR=$(PWD)/include -DLIB_INSTALL_DIR=$(PWD)/lib \
 		-DENABLE_DOCS=OFF -DENABLE_EXAMPLES=OFF && \
 	$(MAKE) install clean
