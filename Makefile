@@ -10,9 +10,13 @@ VPX_VERSION      = 1.8.0
 X264_VERSION     = snapshot-20190304-2245-stable
 X265_VERSION     = 3.1.1
 OPENSSL_VERSION  = 1.1.1c
-OPENSSL_ARCH     = $(shell [ `uname` = Darwin ] \
-                     && echo 'darwin64-x86_64-cc' \
-                     || echo 'linux-generic64')
+OPENSSL_ARCH     = linux-generic64
+ifeq ($(shell uname),Darwin)
+	OPENSSL_ARCH = darwin64-x86_64-cc
+endif
+ifeq ($(shell uname),FreeBSD)
+	OPENSSL_ARCH = BSD-x86_64
+endif
 
 all: bin/ffmpeg
 
