@@ -121,6 +121,7 @@ lib/libx265.a:
 lib/libssl.a:
 	cd src/openssl-$(OPENSSL_VERSION) && \
 	perl ./Configure --prefix=$(PWD) --openssldir=$(PWD)/etc/ssl \
+		no-shared \
 		no-comp \
 		no-ssl2 \
 		no-ssl3 \
