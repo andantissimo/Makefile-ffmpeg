@@ -9,7 +9,7 @@ AOM_VERSION      = 1.0.0-errata1
 VPX_VERSION      = 1.8.0
 X264_VERSION     = snapshot-20190304-2245-stable
 X265_VERSION     = 3.1.1
-OPENSSL_VERSION  = 1.0.2s
+OPENSSL_VERSION  = 1.1.1c
 OPENSSL_ARCH     = $(shell [ `uname` = Darwin ] \
                      && echo 'darwin64-x86_64-cc enable-cc_nistp_64_gcc_128' \
                      || echo 'linux-generic64')
@@ -28,6 +28,7 @@ bin/ffmpeg: lib/libaom.a \
 	cd src/ffmpeg-$(FFMPEG_VERSION) && \
 	export PKG_CONFIG_PATH=$(PWD)/lib/pkgconfig && \
 	export CFLAGS=-I$(PWD)/include && \
+	export LDFLAGS=-L$(PWD)/lib && \
 	./configure --prefix=$(PWD) --enable-gpl --enable-nonfree \
 		--enable-static --disable-shared --enable-runtime-cpudetect \
 		--disable-ffplay --disable-ffprobe \
@@ -102,7 +103,7 @@ lib/libvpx.a:
 lib/libx264.a:
 	cd src/x264-$(X264_VERSION) && \
 	./configure --prefix=$(PWD) --enable-static --disable-shared \
-		--enable-strip --disable-cli && \
+		--enable-strip --enable-pic --disable-cli && \
 	$(MAKE) install clean
 
 lib/libx265.a:
