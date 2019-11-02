@@ -9,7 +9,7 @@ AOM_VERSION      = 1.0.0-errata1
 VPX_VERSION      = 1.8.1
 X264_VERSION     = snapshot-20190718-2245-stable
 X265_VERSION     = 3.2.1
-OPENSSL_VERSION  = 1.1.1d
+OPENSSL_VERSION  = 1.1.1c
 OPENSSL_ARCH     = linux-generic64
 ifeq ($(shell uname),Darwin)
 	OPENSSL_ARCH = darwin64-x86_64-cc
