@@ -1,15 +1,15 @@
 ## ffmpeg
 
 FFMPEG_VERSION   = 4.2.1
-FDK_AAC_VERSION  = 2.0.0
+FDK_AAC_VERSION  = 2.0.1
 FREETYPE_VERSION = 2.10.1
 OPUS_VERSION     = 1.3.1
 RTMPDUMP_VERSION = 20150114
 AOM_VERSION      = 1.0.0-errata1
 VPX_VERSION      = 1.8.1
 X264_VERSION     = snapshot-20190718-2245-stable
-X265_VERSION     = 3.1.2
-OPENSSL_VERSION  = 1.1.1c
+X265_VERSION     = 3.2.1
+OPENSSL_VERSION  = 1.1.1d
 OPENSSL_ARCH     = linux-generic64
 ifeq ($(shell uname),Darwin)
 	OPENSSL_ARCH = darwin64-x86_64-cc
