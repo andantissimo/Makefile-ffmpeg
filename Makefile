@@ -73,7 +73,7 @@ lib/libaom.a:
 	cd tmp/libaom && \
 	cmake $(PWD)/src/libaom-$(AOM_VERSION) -DCMAKE_INSTALL_PREFIX=$(PWD) \
 		-DINCLUDE_INSTALL_DIR=$(PWD)/include -DLIB_INSTALL_DIR=$(PWD)/lib \
-		-DENABLE_DOCS=OFF -DENABLE_EXAMPLES=OFF && \
+		-DENABLE_DOCS=OFF -DENABLE_EXAMPLES=OFF -DENABLE_TESTS=OFF && \
 	$(MAKE) install clean
 
 lib/libfdk-aac.a:
