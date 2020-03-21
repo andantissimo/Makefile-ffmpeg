@@ -102,6 +102,7 @@ lib/libopus.a:
 lib/librav1e.a:
 	cd src/rav1e-$(RAV1E_VERSION) && \
 	cargo cinstall --prefix $(PWD)
+	$(RM) lib/librav1e*.dylib
 
 lib/librtmp.a:
 	cd src/rtmpdump-$(RTMPDUMP_VERSION) && \
