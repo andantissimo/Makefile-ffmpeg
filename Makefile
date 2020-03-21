@@ -1,14 +1,15 @@
 ## ffmpeg
 
-FFMPEG_VERSION   = 4.2.2
+FFMPEG_VERSION   = master
+AOM_VERSION      = 1.0.0-errata1
 FDK_AAC_VERSION  = 2.0.1
 FREETYPE_VERSION = 2.10.1
 OPUS_VERSION     = 1.3.1
+RAV1E_VERSION    = 0.3.1
 RTMPDUMP_VERSION = 20150114
-AOM_VERSION      = 1.0.0-errata1
 VPX_VERSION      = 1.8.2
 X264_VERSION     = stable
-X265_VERSION     = 3.2.1
+X265_VERSION     = 3.3
 OPENSSL_VERSION  = 1.1.1c
 OPENSSL_ARCH     = linux-generic64
 ifeq ($(shell uname),Darwin)
@@ -34,6 +35,7 @@ bin/ffmpeg: lib/libaom.a \
             lib/libfdk-aac.a \
             lib/libfreetype.a \
             lib/libopus.a \
+            lib/librav1e.a \
             lib/librtmp.a \
             lib/libvpx.a \
             lib/libx264.a \
@@ -53,6 +55,7 @@ bin/ffmpeg: lib/libaom.a \
 		--enable-libfdk-aac \
 		--enable-libfreetype \
 		--enable-libopus \
+		--enable-librav1e \
 		--enable-librtmp \
 		--enable-libvpx \
 		--enable-libx264 \
@@ -95,6 +98,10 @@ lib/libopus.a:
 	$(MAKE) install clean
 	sed -e 's@^\(Libs:.*\)$$@\1 -lm@' \
 	    -i'.bak' lib/pkgconfig/opus.pc
+
+lib/librav1e.a:
+	cd src/rav1e-$(RAV1E_VERSION) && \
+	cargo cinstall --prefix $(PWD)
 
 lib/librtmp.a:
 	cd src/rtmpdump-$(RTMPDUMP_VERSION) && \
