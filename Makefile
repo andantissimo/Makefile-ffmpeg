@@ -1,6 +1,6 @@
 ## ffmpeg
 
-FFMPEG_VERSION   = master
+FFMPEG_VERSION   = 4.2.2-rav1e
 AOM_VERSION      = 1.0.0-errata1
 FDK_AAC_VERSION  = 2.0.1
 FREETYPE_VERSION = 2.10.1
