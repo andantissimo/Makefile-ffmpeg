@@ -101,7 +101,7 @@ lib/libopus.a:
 
 lib/librav1e.a:
 	cd src/rav1e-$(RAV1E_VERSION) && \
-	cargo cinstall --prefix $(PWD) --pkgconfigdir $(PWD)/lib/pkgconfig
+	cargo cinstall --prefix $(PWD) --pkgconfigdir $(PWD)/lib/pkgconfig --release
 	sed -e 's@^\(Libs:.*\)$$@\1 -lm -lpthread@' \
 	    -i'.bak' lib/pkgconfig/rav1e.pc
 	$(RM) lib/librav1e.*dylib
