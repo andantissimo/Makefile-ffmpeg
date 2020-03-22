@@ -101,8 +101,11 @@ lib/libopus.a:
 
 lib/librav1e.a:
 	cd src/rav1e-$(RAV1E_VERSION) && \
-	cargo cinstall --prefix $(PWD)
-	$(RM) lib/librav1e*.dylib
+	cargo cinstall --prefix $(PWD) --pkgconfigdir $(PWD)/lib/pkgconfig
+	sed -e 's@^\(Libs:.*\)$$@\1 -lm -lpthread@' \
+	    -i'.bak' lib/pkgconfig/rav1e.pc
+	$(RM) lib/librav1e.*dylib
+	$(RM) lib/librav1e.so*
 
 lib/librtmp.a:
 	cd src/rtmpdump-$(RTMPDUMP_VERSION) && \
