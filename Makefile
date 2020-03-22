@@ -41,11 +41,13 @@ bin/ffmpeg: lib/libaom.a \
             lib/libx264.a \
             lib/libx265.a \
             lib/libssl.a
-	cd src/ffmpeg-$(FFMPEG_VERSION) && \
+	mkdir -p tmp/ffmpeg
+	cd tmp/ffmpeg && \
 	export PKG_CONFIG_PATH=$(PWD)/lib/pkgconfig && \
 	export CFLAGS=-I$(PWD)/include && \
 	export LDFLAGS=-L$(PWD)/lib && \
-	./configure --prefix=$(PWD) --enable-gpl --enable-nonfree \
+	$(PWD)/src/ffmpeg-$(FFMPEG_VERSION)/configure --prefix=$(PWD) \
+		--enable-gpl --enable-nonfree \
 		--enable-static --disable-shared --enable-runtime-cpudetect \
 		--disable-ffplay --disable-ffprobe \
 		--disable-alsa \
