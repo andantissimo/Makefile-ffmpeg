@@ -12,6 +12,7 @@ VMAF_VERSION     = 1.5.1
 VPX_VERSION      = 1.8.2
 X264_VERSION     = stable
 X265_VERSION     = 3.3
+XML2_VERSION     = 2.9.10
 OPENSSL_VERSION  = 1.1.1c
 OPENSSL_ARCH     = linux-generic64
 ifeq ($(shell uname),Darwin)
@@ -44,6 +45,7 @@ bin/ffmpeg: lib/libaom.a \
             lib/libvpx.a \
             lib/libx264.a \
             lib/libx265.a \
+            lib/libxml2.a \
             lib/libssl.a
 	mkdir -p tmp/ffmpeg
 	cd tmp/ffmpeg && \
@@ -69,6 +71,7 @@ bin/ffmpeg: lib/libaom.a \
 		--enable-libx264 \
 		--enable-libx265 \
 		--disable-libxcb \
+		--enable-libxml2 \
 		--disable-lzma \
 		--enable-openssl \
 		--disable-sndio \
@@ -137,7 +140,7 @@ lib/libvmaf.a:
 	$(RM) lib/libvmaf.*dylib
 	$(RM) lib/libvmaf.so*
 ifeq ($(shell uname),Darwin)
-	sed -e 's@^\(Libs:.*\)$$@\1 -lc++abi@' \
+	sed -e 's@^\(Libs:.*\)$$@\1 -lc++ -lc++abi@' \
 	    -i'.bak' lib/pkgconfig/libvmaf.pc
 endif
 ifeq ($(shell uname),Linux)
@@ -172,6 +175,21 @@ lib/libx265.a:
 	$(MAKE) install clean
 	sed -e 's@^\(Libs:.*\)$$@\1 -lstdc++ -lm -ldl -lpthread@' \
 	    -i'.bak' lib/pkgconfig/x265.pc
+
+lib/libxml2.a:
+	cd src/libxml2-$(XML2_VERSION) && \
+	./configure --prefix=$(PWD) --enable-static --disable-shared --with-tree \
+		--without-c14n --without-catalog --without-debug --without-docbook \
+		--without-fexceptions --without-ftp --without-history --without-html \
+		--without-http --without-iconv --without-icu --without-iso8859x \
+		--without-legacy --without-mem-debug --with-minimum --without-output \
+		--without-pattern --without-push --without-python --without-reader \
+		--without-readline --without-regexps --without-run-debug \
+		--without-sax1 --without-schemas --without-schematron \
+		--without-threads --without-valid --without-writer --without-xinclude \
+		--without-xpath --without-xptr --without-modules --without-zlib \
+		--without-lzma --without-coverage && \
+	$(MAKE) install clean
 
 lib/libssl.a:
 	cd src/openssl-$(OPENSSL_VERSION) && \
