@@ -1,20 +1,19 @@
 ## ffmpeg
 
-FFMPEG_VERSION   = 4.2.2-rav1e
-AOM_VERSION      = 1.0.0-errata1
-DAV1D_VERSION    = 0.6.0
+FFMPEG_VERSION   = 4.3.1
+AOM_VERSION      = 2.0.0
+DAV1D_VERSION    = 0.7.1
 FDK_AAC_VERSION  = 2.0.1
-FREETYPE_VERSION = 2.10.1
+FREETYPE_VERSION = 2.10.2
 OPUS_VERSION     = 1.3.1
-RAV1E_VERSION    = 0.3.1
+RAV1E_VERSION    = 0.3.3
 RTMPDUMP_VERSION = 20150114
-VMAF_VERSION     = 1.5.1
+VMAF_VERSION     = 1.5.2
 VPX_VERSION      = 1.8.2
 X264_VERSION     = stable
-X265_VERSION     = 3.3
+X265_VERSION     = 3.4
 XML2_VERSION     = 2.9.10
-OPENSSL_VERSION  = 1.1.1c
-OPENSSL_ARCH     = linux-generic64
+OPENSSL_VERSION  = 1.1.1g
 ifeq ($(shell uname),Darwin)
 	OPENSSL_ARCH = darwin64-x86_64-cc
 endif
@@ -22,7 +21,8 @@ ifeq ($(shell uname),FreeBSD)
 	OPENSSL_ARCH = BSD-x86_64
 endif
 ifeq ($(shell uname),Linux)
-	FFMPEG_OPTIONS += --extra-libs='-ldl -lpthread'
+	OPENSSL_ARCH = linux-generic64
+	FFMPEG_OPTS += --extra-libs='-ldl -lpthread'
 endif
 
 all: bin/ffmpeg
@@ -33,7 +33,7 @@ clean:
 	(cd share/ffmpeg && $(RM) -r examples ffprobe.xsd)
 	(cd share/man && $(RM) -r man3 man5 man7 man8)
 	find bin -type f -not -name ffmpeg -delete
-	find share/man/man1 -not -type d -not -name 'ffmpeg*' -delete
+	find share/man/man1 -not -type d -not -name 'ff*' -delete
 
 bin/ffmpeg: lib/libaom.a \
             lib/libdav1d.a \
@@ -48,15 +48,14 @@ bin/ffmpeg: lib/libaom.a \
             lib/libx265.a \
             lib/libxml2.a \
             lib/libssl.a
-	mkdir -p tmp/ffmpeg
-	cd tmp/ffmpeg && \
+	cd src/ffmpeg-$(FFMPEG_VERSION) && \
 	export PKG_CONFIG_PATH=$(PWD)/lib/pkgconfig && \
 	export CFLAGS=-I$(PWD)/include && \
 	export LDFLAGS=-L$(PWD)/lib && \
-	$(PWD)/src/ffmpeg-$(FFMPEG_VERSION)/configure --prefix=$(PWD) \
+	./configure --prefix=$(PWD) $(FFMPEG_OPTS) \
 		--enable-gpl --enable-version3 --enable-nonfree \
 		--enable-static --disable-shared --enable-runtime-cpudetect \
-		--disable-ffplay --disable-ffprobe \
+		--disable-ffplay \
 		--disable-alsa \
 		--disable-bzlib \
 		--disable-iconv \
@@ -81,15 +80,15 @@ bin/ffmpeg: lib/libaom.a \
 		--enable-zlib \
 		--disable-v4l2-m2m \
 		$(FFMPEG_OPTIONS) && \
-	$(MAKE) install clean
+	$(MAKE) install
 
 lib/libaom.a:
 	mkdir -p tmp/libaom
 	cd tmp/libaom && \
-	cmake $(PWD)/src/libaom-$(AOM_VERSION) -DCMAKE_INSTALL_PREFIX=$(PWD) \
+	cmake $(PWD)/src/aom-v$(AOM_VERSION) -DCMAKE_INSTALL_PREFIX=$(PWD) \
 		-DINCLUDE_INSTALL_DIR=$(PWD)/include -DLIB_INSTALL_DIR=$(PWD)/lib \
 		-DENABLE_DOCS=OFF -DENABLE_EXAMPLES=OFF -DENABLE_TESTS=OFF && \
-	$(MAKE) install clean
+	$(MAKE) install
 
 lib/libdav1d.a:
 	cd src/dav1d-$(DAV1D_VERSION) && \
@@ -100,20 +99,20 @@ lib/libdav1d.a:
 lib/libfdk-aac.a:
 	cd src/fdk-aac-$(FDK_AAC_VERSION) && \
 	./configure --prefix=$(PWD) --enable-static --disable-shared && \
-	$(MAKE) install clean
+	$(MAKE) install
 
 lib/libfreetype.a:
 	cd src/freetype-$(FREETYPE_VERSION) && \
 	./configure --prefix=$(PWD) --enable-static --disable-shared \
 		--without-zlib --without-bzip2 --without-png --without-harfbuzz && \
-	$(MAKE) install clean
+	$(MAKE) install
 
 lib/libopus.a:
 	cd src/opus-$(OPUS_VERSION) && \
 	./configure --prefix=$(PWD) --enable-static --disable-shared \
 		--disable-dependency-tracking \
 		--disable-doc --disable-extra-programs && \
-	$(MAKE) install clean
+	$(MAKE) install
 	sed -e 's@^\(Libs:.*\)$$@\1 -lm@' \
 	    -i'.bak' lib/pkgconfig/opus.pc
 
@@ -130,8 +129,7 @@ lib/librtmp.a:
 	$(MAKE) prefix=$(PWD) MANDIR=$(PWD)/share/man \
 		CRYPTO= \
 		SHARED= \
-		install && \
-	$(MAKE) clean
+		install
 
 lib/libvmaf.a:
 	cd src/vmaf-$(VMAF_VERSION)/libvmaf && \
@@ -159,7 +157,7 @@ lib/libvpx.a:
 		--disable-dependency-tracking \
 		--disable-examples --disable-docs \
 		--enable-runtime-cpu-detect && \
-	$(MAKE) install clean
+	$(MAKE) install
 	sed -e 's@^\(Libs:.*\)$$@\1 -lpthread@' \
 	    -i'.bak' lib/pkgconfig/vpx.pc
 
@@ -167,13 +165,13 @@ lib/libx264.a:
 	cd src/x264-$(X264_VERSION) && \
 	./configure --prefix=$(PWD) --enable-static --disable-shared \
 		--enable-strip --enable-pic --disable-cli && \
-	$(MAKE) install clean
+	$(MAKE) install
 
 lib/libx265.a:
 	cd src/x265_$(X265_VERSION) && \
 	cmake source -DCMAKE_INSTALL_PREFIX=$(PWD) -DCMAKE_BUILD_TYPE=Release \
 		-DENABLE_SHARED=OFF -DENABLE_CLI=OFF && \
-	$(MAKE) install clean
+	$(MAKE) install
 	sed -e 's@^\(Libs:.*\)$$@\1 -lstdc++ -lm -ldl -lpthread@' \
 	    -i'.bak' lib/pkgconfig/x265.pc
 
@@ -190,7 +188,7 @@ lib/libxml2.a:
 		--without-threads --without-valid --without-writer --without-xinclude \
 		--without-xpath --without-xptr --without-modules --without-zlib \
 		--without-lzma --without-coverage && \
-	$(MAKE) install clean
+	$(MAKE) install
 
 lib/libssl.a:
 	cd src/openssl-$(OPENSSL_VERSION) && \
@@ -204,5 +202,4 @@ lib/libssl.a:
 		$(OPENSSL_ARCH) && \
 	$(MAKE) depend && \
 	$(MAKE) && \
-	$(MAKE) install MANDIR=$(PWD)/share/man && \
-	$(MAKE) clean
+	$(MAKE) install MANDIR=$(PWD)/share/man
