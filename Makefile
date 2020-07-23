@@ -28,7 +28,7 @@ endif
 all: bin/ffmpeg
 
 clean:
-	$(RM) -r include lib sbin tmp
+	$(RM) -r include lib libdata sbin tmp
 	(cd share && $(RM) -r aclocal doc gtk-doc)
 	(cd share/ffmpeg && $(RM) -r examples)
 	(cd share/man && $(RM) -r man3 man5 man7 man8)
@@ -95,6 +95,9 @@ lib/libdav1d.a:
 	meson --prefix=$(PWD) --libdir=$(PWD)/lib \
 		--buildtype release --default-library static build && \
 	ninja install -C build
+ifeq ($(shell uname),FreeBSD)
+	mv $(PWD)/libdata/pkgconfig/dav1d.pc $(PWD)/lib/pkgconfig/
+endif
 
 lib/libfdk-aac.a:
 	cd src/fdk-aac-$(FDK_AAC_VERSION) && \
@@ -132,6 +135,11 @@ lib/librtmp.a:
 		install
 
 lib/libvmaf.a:
+ifeq ($(shell uname),FreeBSD)
+	sed -e 's@^\(#elif MACOS\)$$@\1 || __FreeBSD__@' \
+	    -e 's@HW_AVAILCPU@HW_NCPU@' \
+	    -i'.bak' src/vmaf-$(VMAF_VERSION)/libvmaf/src/cpu_info.c
+endif
 	cd src/vmaf-$(VMAF_VERSION)/libvmaf && \
 	meson --prefix=$(PWD) --libdir=$(PWD)/lib \
 		--buildtype release --default-library static build && \
@@ -147,11 +155,16 @@ ifeq ($(shell uname),Linux)
 	    -i'.bak' lib/pkgconfig/libvmaf.pc
 endif
 ifeq ($(shell uname),FreeBSD)
+	mv $(PWD)/libdata/pkgconfig/libvmaf.pc $(PWD)/lib/pkgconfig/
 	sed -e 's@^\(Libs:.*\)$$@\1 -lc++ -lm -lpthread@' \
 	    -i'.bak' lib/pkgconfig/libvmaf.pc
 endif
 
 lib/libvpx.a:
+ifeq ($(shell uname),FreeBSD)
+	sed -e 's@diff --version@hash diff@' \
+	    -i'.bak' src/libvpx-$(VPX_VERSION)/configure
+endif
 	cd src/libvpx-$(VPX_VERSION) && \
 	./configure --prefix=$(PWD) --enable-static --disable-shared \
 		--disable-dependency-tracking \
