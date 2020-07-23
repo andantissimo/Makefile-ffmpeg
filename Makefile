@@ -30,9 +30,9 @@ all: bin/ffmpeg
 clean:
 	$(RM) -r include lib sbin tmp
 	(cd share && $(RM) -r aclocal doc gtk-doc)
-	(cd share/ffmpeg && $(RM) -r examples ffprobe.xsd)
+	(cd share/ffmpeg && $(RM) -r examples)
 	(cd share/man && $(RM) -r man3 man5 man7 man8)
-	find bin -type f -not -name ffmpeg -delete
+	find bin -type f -not -name 'ff*' -delete
 	find share/man/man1 -not -type d -not -name 'ff*' -delete
 
 bin/ffmpeg: lib/libaom.a \
