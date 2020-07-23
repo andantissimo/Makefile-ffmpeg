@@ -107,7 +107,8 @@ lib/libfdk-aac.a:
 lib/libfreetype.a:
 	cd src/freetype-$(FREETYPE_VERSION) && \
 	./configure --prefix=$(PWD) --enable-static --disable-shared \
-		--without-zlib --without-bzip2 --without-png --without-harfbuzz && \
+		--without-zlib --without-bzip2 --without-png --without-harfbuzz \
+		--without-brotli && \
 	$(MAKE) install
 
 lib/libopus.a:
