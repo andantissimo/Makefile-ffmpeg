@@ -86,7 +86,7 @@ lib/libaom.a:
 	mkdir -p tmp/libaom
 	cd tmp/libaom && \
 	cmake $(PWD)/src/aom-v$(AOM_VERSION) -DCMAKE_INSTALL_PREFIX=$(PWD) \
-		-DINCLUDE_INSTALL_DIR=$(PWD)/include -DLIB_INSTALL_DIR=$(PWD)/lib \
+		-DCMAKE_INSTALL_LIBDIR=lib \
 		-DENABLE_DOCS=OFF -DENABLE_EXAMPLES=OFF -DENABLE_TESTS=OFF && \
 	$(MAKE) install
 
