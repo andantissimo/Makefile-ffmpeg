@@ -96,7 +96,9 @@ lib/libdav1d.a:
 		--buildtype release --default-library static build && \
 	ninja install -C build
 ifeq ($(shell uname),FreeBSD)
-	mv $(PWD)/libdata/pkgconfig/dav1d.pc $(PWD)/lib/pkgconfig/
+	cat $(PWD)/libdata/pkgconfig/dav1d.pc | \
+	sed -e 's@^\(Libs:.*\)$$@\1 -lpthread@' \
+	  > $(PWD)/lib/pkgconfig/dav1d.pc
 endif
 
 lib/libfdk-aac.a:
@@ -140,6 +142,8 @@ ifeq ($(shell uname),FreeBSD)
 	sed -e 's@^\(#elif MACOS\)$$@\1 || __FreeBSD__@' \
 	    -e 's@HW_AVAILCPU@HW_NCPU@' \
 	    -i'.bak' src/vmaf-$(VMAF_VERSION)/libvmaf/src/cpu_info.c
+	sed -e 's@_POSIX_C_SOURCE=200112L@_XOPEN_SOURCE=600@' \
+	    -i'.bak' src/vmaf-$(VMAF_VERSION)/libvmaf/meson.build
 endif
 	cd src/vmaf-$(VMAF_VERSION)/libvmaf && \
 	meson --prefix=$(PWD) --libdir=$(PWD)/lib \
@@ -156,9 +160,9 @@ ifeq ($(shell uname),Linux)
 	    -i'.bak' lib/pkgconfig/libvmaf.pc
 endif
 ifeq ($(shell uname),FreeBSD)
-	mv $(PWD)/libdata/pkgconfig/libvmaf.pc $(PWD)/lib/pkgconfig/
+	cat $(PWD)/libdata/pkgconfig/libvmaf.pc | \
 	sed -e 's@^\(Libs:.*\)$$@\1 -lc++ -lm -lpthread@' \
-	    -i'.bak' lib/pkgconfig/libvmaf.pc
+	  > $(PWD)/lib/pkgconfig/libvmaf.pc
 endif
 
 lib/libvpx.a:
