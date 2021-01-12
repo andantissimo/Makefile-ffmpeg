@@ -2,18 +2,18 @@
 
 FFMPEG_VERSION   = 4.3.1
 AOM_VERSION      = 2.0.0
-DAV1D_VERSION    = 0.7.1
+DAV1D_VERSION    = 0.8.1
 FDK_AAC_VERSION  = 2.0.1
-FREETYPE_VERSION = 2.10.2
+FREETYPE_VERSION = 2.10.4
 OPUS_VERSION     = 1.3.1
-RAV1E_VERSION    = 0.3.3
+RAV1E_VERSION    = 0.3.4
 RTMPDUMP_VERSION = 20150114
-VMAF_VERSION     = 1.5.2
-VPX_VERSION      = 1.8.2
+VMAF_VERSION     = 2.1.0
+VPX_VERSION      = 1.9.0
 X264_VERSION     = stable
 X265_VERSION     = 3.4
 XML2_VERSION     = 2.9.10
-OPENSSL_VERSION  = 1.1.1g
+OPENSSL_VERSION  = 1.1.1i
 ifeq ($(shell uname),Darwin)
 	OPENSSL_ARCH = darwin64-x86_64-cc
 endif
@@ -143,7 +143,7 @@ ifeq ($(shell uname),FreeBSD)
 endif
 	cd src/vmaf-$(VMAF_VERSION)/libvmaf && \
 	meson --prefix=$(PWD) --libdir=$(PWD)/lib \
-		--buildtype release --default-library static build && \
+		--buildtype=release --default-library=static build && \
 	ninja install -C build
 	$(RM) lib/libvmaf.*dylib
 	$(RM) lib/libvmaf.so*
