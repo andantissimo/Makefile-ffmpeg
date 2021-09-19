@@ -1,19 +1,19 @@
 ## ffmpeg
 
 FFMPEG_VERSION   = 4.4
-AOM_VERSION      = 3.1.1
-DAV1D_VERSION    = 0.8.2
+AOM_VERSION      = 3.1.2
+DAV1D_VERSION    = 0.9.2
 FDK_AAC_VERSION  = 2.0.2
-FREETYPE_VERSION = 2.10.4
+FREETYPE_VERSION = 2.11.0
 OPUS_VERSION     = 1.3.1
 RAV1E_VERSION    = 0.4.1
 RTMPDUMP_VERSION = 20150114
-VMAF_VERSION     = 2.1.1
+VMAF_VERSION     = 2.2.0
 VPX_VERSION      = 1.10.0
-X264_VERSION     = stable
+X264_VERSION     = 5db6aa6c
 X265_VERSION     = 3.4
 XML2_VERSION     = 2.9.12
-OPENSSL_VERSION  = 1.1.1k
+OPENSSL_VERSION  = 1.1.1l
 ifeq ($(shell uname),Darwin)
 	OPENSSL_ARCH = darwin64-x86_64-cc
 endif
@@ -29,9 +29,9 @@ all: bin/ffmpeg
 
 clean:
 	$(RM) -r include lib libdata sbin tmp
-	(cd share && $(RM) -r aclocal doc gtk-doc)
-	(cd share/ffmpeg && $(RM) -r examples)
-	(cd share/man && $(RM) -r man3 man5 man7 man8)
+	cd share && $(RM) -r aclocal doc gtk-doc
+	cd share/ffmpeg && $(RM) -r examples
+	cd share/man && $(RM) -r man3 man5 man7 man8
 	find bin -type f -not -name 'ff*' -delete
 	find share/man/man1 -not -type d -not -name 'ff*' -delete
 
@@ -83,11 +83,11 @@ bin/ffmpeg: lib/libaom.a \
 	$(MAKE) install
 
 lib/libaom.a:
-	mkdir -p tmp/libaom
-	cd tmp/libaom && \
-	cmake $(PWD)/src/aom-v$(AOM_VERSION) -DCMAKE_INSTALL_PREFIX=$(PWD) \
-		-DCMAKE_INSTALL_LIBDIR=lib \
-		-DENABLE_DOCS=OFF -DENABLE_EXAMPLES=OFF -DENABLE_TESTS=OFF && \
+	mkdir -p tmp/libaom && cd tmp/libaom && \
+	cmake -DCMAKE_INSTALL_PREFIX=$(PWD) \
+		-DENABLE_DOCS=OFF -DENABLE_EXAMPLES=OFF \
+		-DENABLE_TESTDATA=OFF -DENABLE_TESTS=OFF -DENABLE_TOOLS=OFF \
+		$(PWD)/src/aom-$(AOM_VERSION) && \
 	$(MAKE) install
 
 lib/libdav1d.a:
@@ -187,8 +187,9 @@ lib/libx264.a:
 
 lib/libx265.a:
 	cd src/x265_$(X265_VERSION) && \
-	cmake source -DCMAKE_INSTALL_PREFIX=$(PWD) -DCMAKE_BUILD_TYPE=Release \
-		-DENABLE_SHARED=OFF -DENABLE_CLI=OFF && \
+	cmake -DCMAKE_INSTALL_PREFIX=$(PWD) \
+		-DENABLE_CLI=OFF -DENABLE_SHARED=OFF \
+		source && \
 	$(MAKE) install
 	sed -e 's@^\(Libs:.*\)$$@\1 -lstdc++ -lm -ldl -lpthread@' \
 	    -i'.bak' lib/pkgconfig/x265.pc
