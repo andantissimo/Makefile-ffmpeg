@@ -1,47 +1,60 @@
 ## ffmpeg
 
-FFMPEG_VERSION   = 4.4.1
-AOM_VERSION      = 3.1.2
-DAV1D_VERSION    = 0.9.2
-FDK_AAC_VERSION  = 2.0.2
-FREETYPE_VERSION = 2.11.0
-OPUS_VERSION     = 1.3.1
-OPENSSL_VERSION  = 1.1.1l
-RAV1E_VERSION    = 0.4.1
-RTMPDUMP_VERSION = 20150114
-VMAF_VERSION     = 2.3.0
-VPX_VERSION      = 1.11.0
-X264_VERSION     = 5db6aa6c
-X265_VERSION     = 3.4
-XML2_VERSION     = 2.9.12
+FFMPEG_VERSION     = 4.4.1
+AOM_VERSION        = 3.1.2
+ASS_VERSION        = 0.15.2
+DAV1D_VERSION      = 0.9.2
+FDK_AAC_VERSION    = 2.0.2
+FONTCONFIG_VERSION = 2.13.1
+FREETYPE_VERSION   = 2.11.0
+FRIBIDI_VERSION    = 1.0.11
+HARFBUZZ_VERSION   = 3.0.0
+OPENSSL_VERSION    = 1.1.1l
+OPUS_VERSION       = 1.3.1
+RAV1E_VERSION      = 0.4.1
+RTMPDUMP_VERSION   = 20150114
+UTIL_LINUX_VERSION = 2.37.2
+VMAF_VERSION       = 2.3.0
+VPX_VERSION        = 1.11.0
+X264_VERSION       = 5db6aa6c
+X265_VERSION       = 3.4
+XML2_VERSION       = 2.9.12
 ifeq ($(shell uname),Darwin)
-	OPENSSL_ARCH = darwin64-x86_64-cc
-	MAKE_ARGS   += -j$(shell sysctl -n hw.ncpu)
+	ASS_OPTS       = --disable-fontconfig
+	HARFBUZZ_OPTS  = -Dcoretext=enabled
+	OPENSSL_ARCH   = darwin64-x86_64-cc
+	MAKE_ARGS     += -j$(shell sysctl -n hw.ncpu)
+else
+	ASS_DEPS       = lib/libfontconfig.a
+	ASS_LIBS       = -lfontconfig -luuid
 endif
 ifeq ($(shell uname),FreeBSD)
-	OPENSSL_ARCH = BSD-x86_64
-	MAKE_ARGS   += -j$(shell sysctl -n hw.ncpu)
+	OPENSSL_ARCH   = BSD-x86_64
+	MAKE_ARGS     += -j$(shell sysctl -n hw.ncpu)
 endif
 ifeq ($(shell uname),Linux)
-	FFMPEG_OPTS += --extra-libs='-ldl -lpthread'
-	OPENSSL_ARCH = linux-generic64
-	MAKE_ARGS   += -j$(shell nproc)
+	FFMPEG_LIBS   += -ldl -lpthread
+	FFMPEG_OPTS   += --extra-libs='$(FFMPEG_LIBS)'
+	OPENSSL_ARCH   = linux-generic64
+	MAKE_ARGS     += -j$(shell nproc)
 endif
 
 all: bin/ffmpeg
 
 clean:
 	$(RM) -r include lib lib64 libdata sbin tmp
-	cd share && $(RM) -r aclocal doc gtk-doc
+	cd share && $(RM) -r aclocal bash-completion doc gtk-doc locale
 	cd share/ffmpeg && $(RM) -r examples
 	cd share/man && $(RM) -r man3 man5 man7 man8
 	find bin -type f -not -name 'ff*' -delete
 	find share/man/man1 -not -type d -not -name 'ff*' -delete
 
 bin/ffmpeg: lib/libaom.a \
+            lib/libass.a \
             lib/libdav1d.a \
             lib/libfdk-aac.a \
             lib/libfreetype.a \
+            lib/libfribidi.a \
             lib/libopus.a \
             lib/librav1e.a \
             lib/librtmp.a \
@@ -52,9 +65,9 @@ bin/ffmpeg: lib/libaom.a \
             lib/libx265.a \
             lib/libxml2.a
 	cd src/ffmpeg-$(FFMPEG_VERSION) && \
-	export PKG_CONFIG_PATH=$(PWD)/lib/pkgconfig && \
 	export CFLAGS=-I$(PWD)/include && \
 	export LDFLAGS=-L$(PWD)/lib && \
+	export PKG_CONFIG_PATH=$(PWD)/lib/pkgconfig && \
 	./configure --prefix=$(PWD) \
 		--enable-gpl --enable-version3 --enable-nonfree \
 		--enable-static --disable-shared --enable-runtime-cpudetect \
@@ -63,9 +76,11 @@ bin/ffmpeg: lib/libaom.a \
 		--disable-bzlib \
 		--disable-iconv \
 		--enable-libaom \
+		--enable-libass \
 		--enable-libdav1d \
 		--enable-libfdk-aac \
 		--enable-libfreetype \
+		--enable-libfribidi \
 		--enable-libopus \
 		--enable-librav1e \
 		--enable-librtmp \
@@ -93,11 +108,24 @@ lib/libaom.a:
 		$(PWD)/src/aom-$(AOM_VERSION) && \
 	$(MAKE) $(MAKE_ARGS) && $(MAKE) install
 	if [ -f $(PWD)/lib64/libaom.a ]; then \
+		mkdir -p $(PWD)/lib/pkgconfig; \
 		install -m 644 $(PWD)/lib64/libaom.a $(PWD)/lib/libaom.a; \
 		cat $(PWD)/lib64/pkgconfig/aom.pc | \
 		sed -e 's/lib64/lib/g' \
 		  > $(PWD)/lib/pkgconfig/aom.pc; \
 	fi
+
+lib/libass.a: lib/libfribidi.a lib/libharfbuzz.a $(ASS_DEPS)
+	cd src/libass-$(ASS_VERSION) && \
+	export CFLAGS=-I$(PWD)/include && \
+	export PKG_CONFIG_PATH=$(PWD)/lib/pkgconfig && \
+	./configure --prefix=$(PWD) --enable-static --disable-shared \
+		$(ASS_OPTS) && \
+	sed -e 's@#define CONFIG_ICONV 1@/* #undef CONFIG_ICONV */@' \
+	    -i'.bak' config.h && \
+	$(MAKE) $(MAKE_ARGS) && $(MAKE) install
+	sed -e 's@^\(Libs:.*\)$$@\1 -lfreetype -lfribidi -lharfbuzz $(ASS_LIBS)@' \
+	    -i'.bak' lib/pkgconfig/libass.pc
 
 lib/libdav1d.a:
 	cd src/dav1d-$(DAV1D_VERSION) && \
@@ -121,6 +149,37 @@ lib/libfreetype.a:
 		--without-zlib --without-bzip2 --without-png --without-harfbuzz \
 		--without-brotli && \
 	$(MAKE) $(MAKE_ARGS) && $(MAKE) install
+
+lib/libfontconfig.a: lib/libfreetype.a lib/libuuid.a lib/libxml2.a
+	cd src/fontconfig-$(FONTCONFIG_VERSION) && \
+	export CFLAGS=-I$(PWD)/include && \
+	export PKG_CONFIG_PATH=$(PWD)/lib/pkgconfig && \
+	./configure --prefix=$(PWD) --enable-static --disable-shared \
+		--disable-docs --enable-libxml2 && \
+	$(MAKE) -C fontconfig install && \
+	$(MAKE) -C src $(MAKE_ARGS) && $(MAKE) -C src install
+	cat src/fontconfig-$(FONTCONFIG_VERSION)/fontconfig.pc \
+	  > lib/pkgconfig/fontconfig.pc
+
+lib/libfribidi.a:
+	cd src/fribidi-$(FRIBIDI_VERSION) && \
+	./configure --prefix=$(PWD) --enable-static --disable-shared && \
+	$(MAKE) $(MAKE_ARGS) && $(MAKE) install
+
+lib/libharfbuzz.a: lib/libfreetype.a
+	cd src/harfbuzz-$(HARFBUZZ_VERSION) && \
+	export PKG_CONFIG_PATH=$(PWD)/lib/pkgconfig && \
+	meson --prefix=$(PWD) --libdir=$(PWD)/lib \
+		--buildtype release --default-library static \
+		-Dcairo=disabled -Ddocs=disabled -Dfreetype=enabled -Dglib=disabled \
+		-Dgobject=disabled -Dgraphite=disabled -Dicu=disabled \
+		-Dintrospection=disabled -Dtests=disabled \
+		$(HARFBUZZ_OPTS) build && \
+	ninja install -C build
+ifeq ($(shell uname),FreeBSD)
+	cat $(PWD)/libdata/pkgconfig/harfbuzz.pc \
+	  > $(PWD)/lib/pkgconfig/harfbuzz.pc
+endif
 
 lib/libopus.a:
 	cd src/opus-$(OPUS_VERSION) && \
@@ -159,6 +218,20 @@ lib/libssl.a:
 	$(MAKE) depend && \
 	$(MAKE) $(MAKE_ARGS) && \
 	$(MAKE) install MANDIR=$(PWD)/share/man
+
+lib/libuuid.a:
+	cd src/util-linux-$(UTIL_LINUX_VERSION) && \
+	./configure --prefix=$(PWD) --enable-static --disable-shared \
+		--disable-all-programs --disable-asciidoc --disable-libblkid \
+		--disable-libmount --disable-libsmartcols --disable-libfdisks \
+		--disable-bash-completion --disable-use-tty-group \
+		--disable-makeinstall-chown --disable-makeinstall-setuid \
+		--without-util --without-udev --without-ncursesw --without-tinfo \
+		--without-readline --without-cap-ng --without-libz --without-libmagic \
+		--without-user --without-btrfs --without-systemd --without-econf \
+		--without-python \
+		--enable-libuuid && \
+	$(MAKE) $(MAKE_ARGS) && $(MAKE) install
 
 lib/libvmaf.a:
 ifeq ($(shell uname),FreeBSD)
@@ -224,9 +297,9 @@ lib/libxml2.a:
 		--without-fexceptions --without-ftp --without-history --without-html \
 		--without-http --without-iconv --without-icu --without-iso8859x \
 		--without-legacy --without-mem-debug --with-minimum --without-output \
-		--without-pattern --without-push --without-python --without-reader \
+		--without-pattern --with-push --without-python --without-reader \
 		--without-readline --without-regexps --without-run-debug \
-		--without-sax1 --without-schemas --without-schematron \
+		--with-sax1 --without-schemas --without-schematron \
 		--without-threads --without-valid --without-writer --without-xinclude \
 		--without-xpath --without-xptr --without-modules --without-zlib \
 		--without-lzma --without-coverage && \
