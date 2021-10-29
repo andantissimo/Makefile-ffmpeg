@@ -16,13 +16,16 @@ X265_VERSION     = 3.4
 XML2_VERSION     = 2.9.12
 ifeq ($(shell uname),Darwin)
 	OPENSSL_ARCH = darwin64-x86_64-cc
+	MAKE_ARGS   += -j$(shell sysctl -n hw.ncpu)
 endif
 ifeq ($(shell uname),FreeBSD)
 	OPENSSL_ARCH = BSD-x86_64
+	MAKE_ARGS   += -j$(shell sysctl -n hw.ncpu)
 endif
 ifeq ($(shell uname),Linux)
 	FFMPEG_OPTS += --extra-libs='-ldl -lpthread'
 	OPENSSL_ARCH = linux-generic64
+	MAKE_ARGS   += -j$(shell nproc)
 endif
 
 all: bin/ffmpeg
@@ -80,7 +83,7 @@ bin/ffmpeg: lib/libaom.a \
 		--enable-zlib \
 		--disable-v4l2-m2m \
 		$(FFMPEG_OPTS) && \
-	$(MAKE) install
+	$(MAKE) $(MAKE_ARGS) && $(MAKE) install
 
 lib/libaom.a:
 	mkdir -p tmp/libaom && cd tmp/libaom && \
@@ -88,7 +91,7 @@ lib/libaom.a:
 		-DENABLE_DOCS=OFF -DENABLE_EXAMPLES=OFF \
 		-DENABLE_TESTDATA=OFF -DENABLE_TESTS=OFF -DENABLE_TOOLS=OFF \
 		$(PWD)/src/aom-$(AOM_VERSION) && \
-	$(MAKE) install
+	$(MAKE) $(MAKE_ARGS) && $(MAKE) install
 	if [ -f $(PWD)/lib64/libaom.a ]; then \
 		install -m 644 $(PWD)/lib64/libaom.a $(PWD)/lib/libaom.a; \
 		cat $(PWD)/lib64/pkgconfig/aom.pc | \
@@ -110,21 +113,21 @@ endif
 lib/libfdk-aac.a:
 	cd src/fdk-aac-$(FDK_AAC_VERSION) && \
 	./configure --prefix=$(PWD) --enable-static --disable-shared && \
-	$(MAKE) install
+	$(MAKE) $(MAKE_ARGS) && $(MAKE) install
 
 lib/libfreetype.a:
 	cd src/freetype-$(FREETYPE_VERSION) && \
 	./configure --prefix=$(PWD) --enable-static --disable-shared \
 		--without-zlib --without-bzip2 --without-png --without-harfbuzz \
 		--without-brotli && \
-	$(MAKE) install
+	$(MAKE) $(MAKE_ARGS) && $(MAKE) install
 
 lib/libopus.a:
 	cd src/opus-$(OPUS_VERSION) && \
 	./configure --prefix=$(PWD) --enable-static --disable-shared \
 		--disable-dependency-tracking \
 		--disable-doc --disable-extra-programs && \
-	$(MAKE) install
+	$(MAKE) $(MAKE_ARGS) && $(MAKE) install
 	sed -e 's@^\(Libs:.*\)$$@\1 -lm@' \
 	    -i'.bak' lib/pkgconfig/opus.pc
 
@@ -154,7 +157,7 @@ lib/libssl.a:
 		enable-cms \
 		$(OPENSSL_ARCH) && \
 	$(MAKE) depend && \
-	$(MAKE) && \
+	$(MAKE) $(MAKE_ARGS) && \
 	$(MAKE) install MANDIR=$(PWD)/share/man
 
 lib/libvmaf.a:
@@ -195,7 +198,7 @@ endif
 		--disable-dependency-tracking \
 		--disable-examples --disable-docs \
 		--enable-runtime-cpu-detect && \
-	$(MAKE) install
+	$(MAKE) $(MAKE_ARGS) && $(MAKE) install
 	sed -e 's@^\(Libs:.*\)$$@\1 -lpthread@' \
 	    -i'.bak' lib/pkgconfig/vpx.pc
 
@@ -203,14 +206,14 @@ lib/libx264.a:
 	cd src/x264-$(X264_VERSION) && \
 	./configure --prefix=$(PWD) --enable-static --disable-shared \
 		--enable-strip --enable-pic --disable-cli && \
-	$(MAKE) install
+	$(MAKE) $(MAKE_ARGS) && $(MAKE) install
 
 lib/libx265.a:
 	cd src/x265_$(X265_VERSION) && \
 	cmake -DCMAKE_INSTALL_PREFIX=$(PWD) \
 		-DENABLE_CLI=OFF -DENABLE_SHARED=OFF \
 		source && \
-	$(MAKE) install
+	$(MAKE) $(MAKE_ARGS) && $(MAKE) install
 	sed -e 's@^\(Libs:.*\)$$@\1 -lstdc++ -lm -ldl -lpthread@' \
 	    -i'.bak' lib/pkgconfig/x265.pc
 
@@ -227,4 +230,4 @@ lib/libxml2.a:
 		--without-threads --without-valid --without-writer --without-xinclude \
 		--without-xpath --without-xptr --without-modules --without-zlib \
 		--without-lzma --without-coverage && \
-	$(MAKE) install
+	$(MAKE) $(MAKE_ARGS) && $(MAKE) install
