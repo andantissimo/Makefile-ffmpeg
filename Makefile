@@ -28,7 +28,7 @@ endif
 all: bin/ffmpeg
 
 clean:
-	$(RM) -r include lib libdata sbin tmp
+	$(RM) -r include lib lib64 libdata sbin tmp
 	cd share && $(RM) -r aclocal doc gtk-doc
 	cd share/ffmpeg && $(RM) -r examples
 	cd share/man && $(RM) -r man3 man5 man7 man8
@@ -89,6 +89,12 @@ lib/libaom.a:
 		-DENABLE_TESTDATA=OFF -DENABLE_TESTS=OFF -DENABLE_TOOLS=OFF \
 		$(PWD)/src/aom-$(AOM_VERSION) && \
 	$(MAKE) install
+	if [ -f $(PWD)/lib64/libaom.a ]; then \
+		install -m 644 $(PWD)/lib64/libaom.a $(PWD)/lib/libaom.a; \
+		cat $(PWD)/lib64/pkgconfig/aom.pc | \
+		sed -e 's/lib64/lib/g' \
+		  > $(PWD)/lib/pkgconfig/aom.pc; \
+	fi
 
 lib/libdav1d.a:
 	cd src/dav1d-$(DAV1D_VERSION) && \
