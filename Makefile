@@ -6,6 +6,7 @@ DAV1D_VERSION    = 0.9.2
 FDK_AAC_VERSION  = 2.0.2
 FREETYPE_VERSION = 2.11.0
 OPUS_VERSION     = 1.3.1
+OPENSSL_VERSION  = 1.1.1l
 RAV1E_VERSION    = 0.4.1
 RTMPDUMP_VERSION = 20150114
 VMAF_VERSION     = 2.3.0
@@ -13,7 +14,6 @@ VPX_VERSION      = 1.11.0
 X264_VERSION     = 5db6aa6c
 X265_VERSION     = 3.4
 XML2_VERSION     = 2.9.12
-OPENSSL_VERSION  = 1.1.1l
 ifeq ($(shell uname),Darwin)
 	OPENSSL_ARCH = darwin64-x86_64-cc
 endif
@@ -21,8 +21,8 @@ ifeq ($(shell uname),FreeBSD)
 	OPENSSL_ARCH = BSD-x86_64
 endif
 ifeq ($(shell uname),Linux)
-	OPENSSL_ARCH = linux-generic64
 	FFMPEG_OPTS += --extra-libs='-ldl -lpthread'
+	OPENSSL_ARCH = linux-generic64
 endif
 
 all: bin/ffmpeg
@@ -42,17 +42,17 @@ bin/ffmpeg: lib/libaom.a \
             lib/libopus.a \
             lib/librav1e.a \
             lib/librtmp.a \
+            lib/libssl.a \
             lib/libvmaf.a \
             lib/libvpx.a \
             lib/libx264.a \
             lib/libx265.a \
-            lib/libxml2.a \
-            lib/libssl.a
+            lib/libxml2.a
 	cd src/ffmpeg-$(FFMPEG_VERSION) && \
 	export PKG_CONFIG_PATH=$(PWD)/lib/pkgconfig && \
 	export CFLAGS=-I$(PWD)/include && \
 	export LDFLAGS=-L$(PWD)/lib && \
-	./configure --prefix=$(PWD) $(FFMPEG_OPTS) \
+	./configure --prefix=$(PWD) \
 		--enable-gpl --enable-version3 --enable-nonfree \
 		--enable-static --disable-shared --enable-runtime-cpudetect \
 		--disable-ffplay \
@@ -79,7 +79,7 @@ bin/ffmpeg: lib/libaom.a \
 		--disable-xlib \
 		--enable-zlib \
 		--disable-v4l2-m2m \
-		$(FFMPEG_OPTIONS) && \
+		$(FFMPEG_OPTS) && \
 	$(MAKE) install
 
 lib/libaom.a:
@@ -136,6 +136,20 @@ lib/librtmp.a:
 		CRYPTO= \
 		SHARED= \
 		install
+
+lib/libssl.a:
+	cd src/openssl-$(OPENSSL_VERSION) && \
+	perl ./Configure --prefix=$(PWD) --openssldir=$(PWD)/etc/ssl \
+		no-shared \
+		no-comp \
+		no-ssl2 \
+		no-ssl3 \
+		no-zlib \
+		enable-cms \
+		$(OPENSSL_ARCH) && \
+	$(MAKE) depend && \
+	$(MAKE) && \
+	$(MAKE) install MANDIR=$(PWD)/share/man
 
 lib/libvmaf.a:
 ifeq ($(shell uname),FreeBSD)
@@ -208,17 +222,3 @@ lib/libxml2.a:
 		--without-xpath --without-xptr --without-modules --without-zlib \
 		--without-lzma --without-coverage && \
 	$(MAKE) install
-
-lib/libssl.a:
-	cd src/openssl-$(OPENSSL_VERSION) && \
-	perl ./Configure --prefix=$(PWD) --openssldir=$(PWD)/etc/ssl \
-		no-shared \
-		no-comp \
-		no-ssl2 \
-		no-ssl3 \
-		no-zlib \
-		enable-cms \
-		$(OPENSSL_ARCH) && \
-	$(MAKE) depend && \
-	$(MAKE) && \
-	$(MAKE) install MANDIR=$(PWD)/share/man
