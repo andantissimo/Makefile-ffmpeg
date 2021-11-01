@@ -224,9 +224,10 @@ lib/libssl.a:
 
 lib/libSvtAv1Enc.a:
 ifeq ($(shell uname),FreeBSD)
+	cd src/SVT-AV1-v$(SVT_AV1_VERSION) && \
 	sed -e 's@|AMD64|@|AMD64|amd64|@' \
 	    -e 's@|Darwin|@|Darwin|FreeBSD|@' \
-	    -i'.bak' src/SVT-AV1-v$(SVT_AV1_VERSION)/third_party/cpuinfo/CMakeLists.txt
+	    -i'.bak' third_party/cpuinfo/CMakeLists.txt
 endif
 	cd src/SVT-AV1-v$(SVT_AV1_VERSION)/Build && \
 	cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(PWD) \
