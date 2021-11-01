@@ -132,7 +132,9 @@ lib/libass.a: lib/libfribidi.a lib/libharfbuzz.a $(ASS_DEPS)
 lib/libdav1d.a:
 	cd src/dav1d-$(DAV1D_VERSION) && \
 	meson --prefix=$(PWD) --libdir=$(PWD)/lib \
-		--buildtype release --default-library static build && \
+		--buildtype release --default-library static \
+		-Denable_tools=false -Denable_examples=false -Denable_tests=false \
+		build && \
 	ninja install -C build
 ifeq ($(shell uname),FreeBSD)
 	cat libdata/pkgconfig/dav1d.pc | sed -e 's@^\(Libs:.*\)$$@\1 -lpthread@' \
@@ -266,7 +268,9 @@ ifeq ($(shell uname),FreeBSD)
 endif
 	cd src/vmaf-$(VMAF_VERSION)/libvmaf && \
 	meson --prefix=$(PWD) --libdir=$(PWD)/lib \
-		--buildtype=release --default-library=static build && \
+		--buildtype=release --default-library=static \
+		-Denable_tests=false -Denable_docs=false \
+		build && \
 	ninja install -C build
 	$(RM) lib/libvmaf.*dylib
 	$(RM) lib/libvmaf.so*
