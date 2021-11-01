@@ -13,6 +13,7 @@ OPENSSL_VERSION    = 1.1.1l
 OPUS_VERSION       = 1.3.1
 RAV1E_VERSION      = 0.4.1
 RTMPDUMP_VERSION   = 20150114
+SVT_AV1_VERSION    = 0.8.7
 UTIL_LINUX_VERSION = 2.37.2
 VMAF_VERSION       = 2.3.0
 VPX_VERSION        = 1.11.0
@@ -59,6 +60,7 @@ bin/ffmpeg: lib/libaom.a \
             lib/librav1e.a \
             lib/librtmp.a \
             lib/libssl.a \
+            lib/libSvtAv1Enc.a \
             lib/libvmaf.a \
             lib/libvpx.a \
             lib/libx264.a \
@@ -84,6 +86,7 @@ bin/ffmpeg: lib/libaom.a \
 		--enable-libopus \
 		--enable-librav1e \
 		--enable-librtmp \
+		--enable-libsvtav1 \
 		--enable-libvmaf \
 		--enable-libvpx \
 		--enable-libx264 \
@@ -102,17 +105,16 @@ bin/ffmpeg: lib/libaom.a \
 
 lib/libaom.a:
 	mkdir -p tmp/libaom && cd tmp/libaom && \
-	cmake -DCMAKE_INSTALL_PREFIX=$(PWD) \
+	cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(PWD) \
 		-DENABLE_DOCS=OFF -DENABLE_EXAMPLES=OFF \
 		-DENABLE_TESTDATA=OFF -DENABLE_TESTS=OFF -DENABLE_TOOLS=OFF \
 		$(PWD)/src/aom-$(AOM_VERSION) && \
 	$(MAKE) $(MAKE_ARGS) && $(MAKE) install
-	if [ -f $(PWD)/lib64/libaom.a ]; then \
-		mkdir -p $(PWD)/lib/pkgconfig; \
-		install -m 644 $(PWD)/lib64/libaom.a $(PWD)/lib/libaom.a; \
-		cat $(PWD)/lib64/pkgconfig/aom.pc | \
-		sed -e 's/lib64/lib/g' \
-		  > $(PWD)/lib/pkgconfig/aom.pc; \
+	if [ -f lib64/libaom.a ]; then \
+		mkdir -p lib/pkgconfig; \
+		install -m 644 lib64/libaom.a lib/libaom.a; \
+		cat lib64/pkgconfig/aom.pc | sed -e 's/lib64/lib/g' \
+		  > lib/pkgconfig/aom.pc; \
 	fi
 
 lib/libass.a: lib/libfribidi.a lib/libharfbuzz.a $(ASS_DEPS)
@@ -133,9 +135,8 @@ lib/libdav1d.a:
 		--buildtype release --default-library static build && \
 	ninja install -C build
 ifeq ($(shell uname),FreeBSD)
-	cat $(PWD)/libdata/pkgconfig/dav1d.pc | \
-	sed -e 's@^\(Libs:.*\)$$@\1 -lpthread@' \
-	  > $(PWD)/lib/pkgconfig/dav1d.pc
+	cat libdata/pkgconfig/dav1d.pc | sed -e 's@^\(Libs:.*\)$$@\1 -lpthread@' \
+	  > lib/pkgconfig/dav1d.pc
 endif
 
 lib/libfdk-aac.a:
@@ -177,8 +178,8 @@ lib/libharfbuzz.a: lib/libfreetype.a
 		$(HARFBUZZ_OPTS) build && \
 	ninja install -C build
 ifeq ($(shell uname),FreeBSD)
-	cat $(PWD)/libdata/pkgconfig/harfbuzz.pc \
-	  > $(PWD)/lib/pkgconfig/harfbuzz.pc
+	cat libdata/pkgconfig/harfbuzz.pc \
+	  > lib/pkgconfig/harfbuzz.pc
 endif
 
 lib/libopus.a:
@@ -219,6 +220,28 @@ lib/libssl.a:
 	$(MAKE) $(MAKE_ARGS) && \
 	$(MAKE) install MANDIR=$(PWD)/share/man
 
+lib/libSvtAv1Enc.a:
+ifeq ($(shell uname),FreeBSD)
+	sed -e 's@|AMD64|@|AMD64|amd64|@' \
+	    -e 's@|Darwin|@|Darwin|FreeBSD|@' \
+	    -i'.bak' src/SVT-AV1-v$(SVT_AV1_VERSION)/third_party/cpuinfo/CMakeLists.txt
+endif
+	cd src/SVT-AV1-v$(SVT_AV1_VERSION)/Build && \
+	cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(PWD) \
+		-DBUILD_APPS=OFF -DBUILD_SHARED_LIBS=OFF -DBUILD_TESTING=OFF \
+		.. && \
+	$(MAKE) $(MAKE_ARGS) && \
+	$(MAKE) install
+	if [ -f lib64/libSvtAv1Enc.a ]; then \
+		mkdir -p lib/pkgconfig; \
+		install -m 644 lib64/libSvtAv1Dec.a lib/libSvtAv1Dec.a; \
+		install -m 644 lib64/libSvtAv1Enc.a lib/libSvtAv1Enc.a; \
+		cat lib64/pkgconfig/SvtAv1Dec.pc | sed -e 's/lib64/lib/g' \
+		  > lib/pkgconfig/SvtAv1Dec.pc; \
+		cat lib64/pkgconfig/SvtAv1Enc.pc | sed -e 's/lib64/lib/g' \
+		  > lib/pkgconfig/SvtAv1Enc.pc; \
+	fi
+
 lib/libuuid.a:
 	cd src/util-linux-$(UTIL_LINUX_VERSION) && \
 	./configure --prefix=$(PWD) --enable-static --disable-shared \
@@ -256,9 +279,9 @@ ifeq ($(shell uname),Linux)
 	    -i'.bak' lib/pkgconfig/libvmaf.pc
 endif
 ifeq ($(shell uname),FreeBSD)
-	cat $(PWD)/libdata/pkgconfig/libvmaf.pc | \
+	cat libdata/pkgconfig/libvmaf.pc | \
 	sed -e 's@^\(Libs:.*\)$$@\1 -lc++ -lm -lpthread@' \
-	  > $(PWD)/lib/pkgconfig/libvmaf.pc
+	  > lib/pkgconfig/libvmaf.pc
 endif
 
 lib/libvpx.a:
@@ -269,7 +292,8 @@ endif
 	cd src/libvpx-$(VPX_VERSION) && \
 	./configure --prefix=$(PWD) --enable-static --disable-shared \
 		--disable-dependency-tracking \
-		--disable-examples --disable-docs \
+		--disable-examples --disable-docs --disable-unit-tests \
+		--disable-decode-perf-tests --disable-encode-perf-tests \
 		--enable-runtime-cpu-detect && \
 	$(MAKE) $(MAKE_ARGS) && $(MAKE) install
 	sed -e 's@^\(Libs:.*\)$$@\1 -lpthread@' \
@@ -283,7 +307,7 @@ lib/libx264.a:
 
 lib/libx265.a:
 	cd src/x265_$(X265_VERSION) && \
-	cmake -DCMAKE_INSTALL_PREFIX=$(PWD) \
+	cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(PWD) \
 		-DENABLE_CLI=OFF -DENABLE_SHARED=OFF \
 		source && \
 	$(MAKE) $(MAKE_ARGS) && $(MAKE) install
