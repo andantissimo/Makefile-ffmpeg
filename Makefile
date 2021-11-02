@@ -1,49 +1,57 @@
 ## ffmpeg
 
-FFMPEG_VERSION     = 4.4.1
-AOM_VERSION        = 3.1.2
-ASS_VERSION        = 0.15.2
-DAV1D_VERSION      = 0.9.2
-FDK_AAC_VERSION    = 2.0.2
-FONTCONFIG_VERSION = 2.13.1
-FREETYPE_VERSION   = 2.11.0
-FRIBIDI_VERSION    = 1.0.11
-HARFBUZZ_VERSION   = 3.0.0
-OPENSSL_VERSION    = 1.1.1l
-OPUS_VERSION       = 1.3.1
-RAV1E_VERSION      = 0.4.1
-RTMPDUMP_VERSION   = 20150114
-SVT_AV1_VERSION    = 0.8.7
-UTIL_LINUX_VERSION = 2.37.2
-VMAF_VERSION       = 2.3.0
-VPX_VERSION        = 1.11.0
-X264_VERSION       = 5db6aa6c
-X265_VERSION       = 3.4
-XML2_VERSION       = 2.9.12
+FFMPEG_VERSION      = 4.4.1
+AOM_VERSION         = 3.1.2
+ASS_VERSION         = 0.15.2
+DAV1D_VERSION       = 0.9.2
+FDK_AAC_VERSION     = 2.0.2
+FONTCONFIG_VERSION  = 2.13.1
+FREETYPE_VERSION    = 2.11.0
+FRIBIDI_VERSION     = 1.0.11
+HARFBUZZ_VERSION    = 3.0.0
+OPENSSL_VERSION     = 1.1.1l
+OPUS_VERSION        = 1.3.1
+RAV1E_VERSION       = 0.4.1
+RTMPDUMP_VERSION    = 20150114
+SVT_AV1_VERSION     = 0.8.7
+UTIL_LINUX_VERSION  = 2.37.2
+VMAF_VERSION        = 2.3.0
+VPX_VERSION         = 1.11.0
+X264_VERSION        = 5db6aa6c
+X265_VERSION        = 3.4
+XML2_VERSION        = 2.9.12
 ifeq ($(shell uname),Darwin)
-	ASS_OPTS       = --disable-fontconfig
-	HARFBUZZ_OPTS  = -Dcoretext=enabled
-	OPENSSL_ARCH   = darwin64-x86_64-cc
-	MAKE_ARGS     += -j$(shell sysctl -n hw.ncpu)
+	ASS_OPTS        = --disable-fontconfig
+	HARFBUZZ_OPTS   = -Dcoretext=enabled
+	OPENSSL_ARCH    = darwin64-x86_64-cc
+	MAKE_ARGS      += -j$(shell sysctl -n hw.ncpu)
 else
-	ASS_DEPS       = lib/libfontconfig.a
-	ASS_LIBS       = -lfontconfig -luuid
+	ASS_DEPS        = lib/libfontconfig.a
+	ASS_LIBS        = -lfontconfig -luuid
 endif
 ifeq ($(shell uname),FreeBSD)
-	OPENSSL_ARCH   = BSD-x86_64
-	MAKE_ARGS     += -j$(shell sysctl -n hw.ncpu)
+	FONTCONFIG_PATH = /usr/local/etc/fonts
+	OPENSSL_ARCH    = BSD-x86_64
+	MAKE_ARGS      += -j$(shell sysctl -n hw.ncpu)
+else
+	FONTCONFIG_PATH = /etc/fonts
 endif
 ifeq ($(shell uname),Linux)
-	FFMPEG_LIBS   += -ldl -lpthread
-	FFMPEG_OPTS   += --extra-libs='$(FFMPEG_LIBS)'
-	OPENSSL_ARCH   = linux-generic64
-	MAKE_ARGS     += -j$(shell nproc)
+	FFMPEG_LIBS    += -ldl -lpthread
+	FFMPEG_OPTS    += --extra-libs='$(FFMPEG_LIBS)'
+	OPENSSL_ARCH    = linux-generic64
+	MAKE_ARGS      += -j$(shell nproc)
+endif
+ifneq ($(wildcard /etc/redhat-release),)
+	OPENSSL_DIR    ?= /etc/pki/tls
+else
+	OPENSSL_DIR    ?= /etc/ssl
 endif
 
 all: bin/ffmpeg
 
 clean:
-	$(RM) -r include lib lib64 libdata sbin tmp
+	$(RM) -r etc include lib lib64 libdata sbin tmp
 	cd share && $(RM) -r aclocal bash-completion doc gtk-doc locale
 	cd share/ffmpeg && $(RM) -r examples
 	cd share/man && $(RM) -r man3 man5 man7 man8
@@ -121,8 +129,8 @@ lib/libass.a: lib/libfribidi.a lib/libharfbuzz.a $(ASS_DEPS)
 	cd src/libass-$(ASS_VERSION) && \
 	export CFLAGS=-I$(PWD)/include && \
 	export PKG_CONFIG_PATH=$(PWD)/lib/pkgconfig && \
-	./configure --prefix=$(PWD) --enable-static --disable-shared \
-		$(ASS_OPTS) && \
+	./configure --prefix=$(PWD) --disable-dependency-tracking \
+		--enable-static --disable-shared $(ASS_OPTS) && \
 	sed -e 's@#define CONFIG_ICONV 1@/* #undef CONFIG_ICONV */@' \
 	    -i'.bak' config.h && \
 	$(MAKE) $(MAKE_ARGS) && $(MAKE) install
@@ -143,7 +151,8 @@ endif
 
 lib/libfdk-aac.a:
 	cd src/fdk-aac-$(FDK_AAC_VERSION) && \
-	./configure --prefix=$(PWD) --enable-static --disable-shared && \
+	./configure --prefix=$(PWD) --disable-dependency-tracking \
+		--enable-static --disable-shared && \
 	$(MAKE) $(MAKE_ARGS) && $(MAKE) install
 
 lib/libfreetype.a:
@@ -157,7 +166,8 @@ lib/libfontconfig.a: lib/libfreetype.a lib/libuuid.a lib/libxml2.a
 	cd src/fontconfig-$(FONTCONFIG_VERSION) && \
 	export CFLAGS=-I$(PWD)/include && \
 	export PKG_CONFIG_PATH=$(PWD)/lib/pkgconfig && \
-	./configure --prefix=$(PWD) --enable-static --disable-shared \
+	./configure --prefix=$(PWD) --with-baseconfigdir=$(FONTCONFIG_PATH) \
+		--disable-dependency-tracking --enable-static --disable-shared \
 		--disable-docs --enable-libxml2 && \
 	$(MAKE) -C fontconfig install && \
 	$(MAKE) -C src $(MAKE_ARGS) && $(MAKE) -C src install
@@ -166,7 +176,8 @@ lib/libfontconfig.a: lib/libfreetype.a lib/libuuid.a lib/libxml2.a
 
 lib/libfribidi.a:
 	cd src/fribidi-$(FRIBIDI_VERSION) && \
-	./configure --prefix=$(PWD) --enable-static --disable-shared && \
+	./configure --prefix=$(PWD) --disable-dependency-tracking \
+		--enable-static --disable-shared && \
 	$(MAKE) $(MAKE_ARGS) && $(MAKE) install
 
 lib/libharfbuzz.a: lib/libfreetype.a
@@ -186,8 +197,8 @@ endif
 
 lib/libopus.a:
 	cd src/opus-$(OPUS_VERSION) && \
-	./configure --prefix=$(PWD) --enable-static --disable-shared \
-		--disable-dependency-tracking \
+	./configure --prefix=$(PWD) --disable-dependency-tracking \
+		--enable-static --disable-shared \
 		--disable-doc --disable-extra-programs && \
 	$(MAKE) $(MAKE_ARGS) && $(MAKE) install
 	sed -e 's@^\(Libs:.*\)$$@\1 -lm@' \
@@ -202,7 +213,7 @@ lib/librav1e.a:
 	$(RM) lib/librav1e.so*
 
 lib/librtmp.a:
-	cd src/rtmpdump-$(RTMPDUMP_VERSION) && \
+	cd src/rtmpdump-$(RTMPDUMP_VERSION)/librtmp && \
 	$(MAKE) prefix=$(PWD) MANDIR=$(PWD)/share/man \
 		CRYPTO= \
 		SHARED= \
@@ -210,7 +221,7 @@ lib/librtmp.a:
 
 lib/libssl.a:
 	cd src/openssl-$(OPENSSL_VERSION) && \
-	perl ./Configure --prefix=$(PWD) --openssldir=$(PWD)/etc/ssl \
+	perl ./Configure --prefix=$(PWD) --openssldir=$(OPENSSL_DIR) \
 		no-shared \
 		no-comp \
 		no-ssl2 \
@@ -220,7 +231,7 @@ lib/libssl.a:
 		$(OPENSSL_ARCH) && \
 	$(MAKE) depend && \
 	$(MAKE) $(MAKE_ARGS) && \
-	$(MAKE) install MANDIR=$(PWD)/share/man
+	$(MAKE) install_dev
 
 lib/libSvtAv1Enc.a:
 ifeq ($(shell uname),FreeBSD)
@@ -247,7 +258,8 @@ endif
 
 lib/libuuid.a:
 	cd src/util-linux-$(UTIL_LINUX_VERSION) && \
-	./configure --prefix=$(PWD) --enable-static --disable-shared \
+	./configure --prefix=$(PWD) --disable-dependency-tracking \
+		--enable-static --disable-shared \
 		--disable-all-programs --disable-asciidoc --disable-libblkid \
 		--disable-libmount --disable-libsmartcols --disable-libfdisks \
 		--disable-bash-completion --disable-use-tty-group \
@@ -295,8 +307,8 @@ ifeq ($(shell uname),FreeBSD)
 	    -i'.bak' src/libvpx-$(VPX_VERSION)/configure
 endif
 	cd src/libvpx-$(VPX_VERSION) && \
-	./configure --prefix=$(PWD) --enable-static --disable-shared \
-		--disable-dependency-tracking \
+	./configure --prefix=$(PWD) --disable-dependency-tracking \
+		--enable-static --disable-shared \
 		--disable-examples --disable-docs --disable-unit-tests \
 		--disable-decode-perf-tests --disable-encode-perf-tests \
 		--enable-runtime-cpu-detect && \
@@ -321,15 +333,16 @@ lib/libx265.a:
 
 lib/libxml2.a:
 	cd src/libxml2-$(XML2_VERSION) && \
-	./configure --prefix=$(PWD) --enable-static --disable-shared --with-tree \
+	./configure --prefix=$(PWD) --disable-dependency-tracking \
+		--enable-static --disable-shared \
 		--without-c14n --without-catalog --without-debug --without-docbook \
 		--without-fexceptions --without-ftp --without-history --without-html \
 		--without-http --without-iconv --without-icu --without-iso8859x \
 		--without-legacy --without-mem-debug --with-minimum --without-output \
 		--without-pattern --with-push --without-python --without-reader \
-		--without-readline --without-regexps --without-run-debug \
-		--with-sax1 --without-schemas --without-schematron \
-		--without-threads --without-valid --without-writer --without-xinclude \
-		--without-xpath --without-xptr --without-modules --without-zlib \
-		--without-lzma --without-coverage && \
+		--without-readline --without-regexps --without-run-debug --with-sax1 \
+		--without-schemas --without-schematron --without-threads --with-tree \
+		--without-valid --without-writer --without-xinclude --without-xpath \
+		--without-xptr --without-modules --without-zlib --without-lzma \
+		--without-coverage && \
 	$(MAKE) $(MAKE_ARGS) && $(MAKE) install
