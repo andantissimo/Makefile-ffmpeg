@@ -326,6 +326,7 @@ lib/libx265.a:
 	cd src/x265_$(X265_VERSION) && \
 	cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(PWD) \
 		-DENABLE_CLI=OFF -DENABLE_SHARED=OFF \
+		-DENABLE_HDR10_PLUS=ON -DHIGH_BIT_DEPTH=ON \
 		source && \
 	$(MAKE) $(MAKE_ARGS) && $(MAKE) install
 	sed -e 's@^\(Libs:.*\)$$@\1 -lstdc++ -lm -ldl -lpthread@' \
