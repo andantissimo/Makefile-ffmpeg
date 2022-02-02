@@ -20,6 +20,7 @@ VPX_VERSION         = 1.11.0
 X264_VERSION        = 5db6aa6c
 X265_VERSION        = 3.4
 XML2_VERSION        = 2.9.12
+ZIMG_VERSION        = 3.0.3
 ifeq ($(shell uname),Darwin)
 	ASS_OPTS        = --disable-fontconfig
 	HARFBUZZ_OPTS   = -Dcoretext=enabled
@@ -73,7 +74,8 @@ bin/ffmpeg: lib/libaom.a \
             lib/libvpx.a \
             lib/libx264.a \
             lib/libx265.a \
-            lib/libxml2.a
+            lib/libxml2.a \
+            lib/libzimg.a
 	cd src/ffmpeg-$(FFMPEG_VERSION) && \
 	export CFLAGS=-I$(PWD)/include && \
 	export LDFLAGS=-L$(PWD)/lib && \
@@ -101,6 +103,7 @@ bin/ffmpeg: lib/libaom.a \
 		--enable-libx265 \
 		--disable-libxcb \
 		--enable-libxml2 \
+		--enable-libzimg \
 		--disable-lzma \
 		--enable-openssl \
 		--disable-sndio \
@@ -347,3 +350,12 @@ lib/libxml2.a:
 		--without-xptr --without-modules --without-zlib --without-lzma \
 		--without-coverage && \
 	$(MAKE) $(MAKE_ARGS) && $(MAKE) install
+
+lib/libzimg.a:
+	cd src/zimg-release-$(ZIMG_VERSION) && \
+	./autogen.sh && \
+	./configure --prefix=$(PWD) --disable-dependency-tracking \
+		--enable-static --disable-shared && \
+	$(MAKE) $(MAKE_ARGS) && $(MAKE) install
+	sed -e 's@^\(Libs:.*\)$$@\1 -lstdc++ -lm@' \
+	    -i'.bak' lib/pkgconfig/zimg.pc
