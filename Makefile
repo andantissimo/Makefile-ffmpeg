@@ -314,7 +314,7 @@ endif
 		--enable-static --disable-shared \
 		--disable-examples --disable-docs --disable-unit-tests \
 		--disable-decode-perf-tests --disable-encode-perf-tests \
-		--enable-runtime-cpu-detect && \
+		--enable-vp9-highbitdepth --enable-runtime-cpu-detect && \
 	$(MAKE) $(MAKE_ARGS) && $(MAKE) install
 	sed -e 's@^\(Libs:.*\)$$@\1 -lpthread@' \
 	    -i'.bak' lib/pkgconfig/vpx.pc
