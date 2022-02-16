@@ -325,15 +325,63 @@ lib/libx264.a:
 		--enable-strip --enable-pic --disable-cli && \
 	$(MAKE) $(MAKE_ARGS) && $(MAKE) install
 
-lib/libx265.a:
-	cd src/x265_$(X265_VERSION) && \
+lib/libx265_main10.a:
+	mkdir -p lib tmp/x265/main10 && cd tmp/x265/main10 && \
+	cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(PWD) \
+		-DENABLE_CLI=OFF -DENABLE_SHARED=OFF -DEXPORT_C_API=OFF \
+		-DHIGH_BIT_DEPTH=ON -DENABLE_HDR10_PLUS=ON \
+		$(PWD)/src/x265_$(X265_VERSION)/source && \
+	$(MAKE) $(MAKE_ARGS) && \
+	install -m 644 libx265.a $(PWD)/lib/libx265_main10.a
+
+lib/libx265_main12.a:
+	mkdir -p lib tmp/x265/main12 && cd tmp/x265/main12 && \
+	cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(PWD) \
+		-DENABLE_CLI=OFF -DENABLE_SHARED=OFF -DEXPORT_C_API=OFF \
+		-DHIGH_BIT_DEPTH=ON -DMAIN12=ON \
+		$(PWD)/src/x265_$(X265_VERSION)/source && \
+	$(MAKE) $(MAKE_ARGS) && \
+	install -m 644 libx265.a $(PWD)/lib/libx265_main12.a
+
+lib/libx265_main.a: lib/libx265_main10.a lib/libx265_main12.a
+	mkdir -p lib tmp/x265/main && cd tmp/x265/main && \
 	cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(PWD) \
 		-DENABLE_CLI=OFF -DENABLE_SHARED=OFF \
-		-DENABLE_HDR10_PLUS=ON -DHIGH_BIT_DEPTH=ON \
-		source && \
-	$(MAKE) $(MAKE_ARGS) && $(MAKE) install
+		-DEXTRA_LIB="x265_main10.a;x265_main12.a" \
+		-DEXTRA_LINK_FLAGS="-L$(PWD)/lib" \
+		-DLINKED_10BIT=ON -DLINKED_12BIT=ON \
+		$(PWD)/src/x265_$(X265_VERSION)/source && \
+	$(MAKE) $(MAKE_ARGS) && \
+	install -m 644 libx265.a $(PWD)/lib/libx265_main.a
+
+tmp/x265.ar: lib/libx265_main.a lib/libx265_main10.a lib/libx265_main12.a
+	echo CREATE lib/libx265.a > $@
+	echo ADDLIB lib/libx265_main.a >> $@
+	echo ADDLIB lib/libx265_main10.a >> $@
+	echo ADDLIB lib/libx265_main12.a >> $@
+	echo SAVE >> $@
+	echo END >> $@
+
+lib/libx265.a: tmp/x265.ar
+	mkdir -p include lib/pkgconfig
+	install -m 644 src/x265_$(X265_VERSION)/source/x265.h include/x265.h
+	install -m 644 tmp/x265/main/x265_config.h include/x265_config.h
+ifeq ($(shell uname),Darwin)
+	libtool -static -o lib/libx265.a \
+		lib/libx265_main.a lib/libx265_main10.a lib/libx265_main12.a
+else
+	ar -M < tmp/x265.ar
+	ranlib lib/libx265.a
+endif
+ifeq ($(shell uname),Linux)
+	cat tmp/x265/main/x265.pc | \
 	sed -e 's@^\(Libs:.*\)$$@\1 -lstdc++ -lm -ldl -lpthread@' \
-	    -i'.bak' lib/pkgconfig/x265.pc
+	  > lib/pkgconfig/x265.pc
+else
+	cat tmp/x265/main/x265.pc | \
+	sed -e 's@^\(Libs:.*\)$$@\1 -lc++ -lm -ldl -lpthread@' \
+	  > lib/pkgconfig/x265.pc
+endif
 
 lib/libxml2.a:
 	cd src/libxml2-$(XML2_VERSION) && \
