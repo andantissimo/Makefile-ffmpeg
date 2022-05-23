@@ -13,6 +13,7 @@ OPENSSL_VERSION     = 3.0.3
 OPUS_VERSION        = 1.3.1
 RAV1E_VERSION       = 0.5.1
 RTMPDUMP_VERSION    = 20150114
+SOXR_VERSION        = 0.1.3
 SVT_AV1_VERSION     = 1.1.0
 UTIL_LINUX_VERSION  = 2.38
 VMAF_VERSION        = 2.3.1
@@ -68,6 +69,7 @@ bin/ffmpeg: lib/libaom.a \
             lib/libopus.a \
             lib/librav1e.a \
             lib/librtmp.a \
+            lib/libsoxr.a \
             lib/libssl.a \
             lib/libSvtAv1Enc.a \
             lib/libvmaf.a \
@@ -96,6 +98,7 @@ bin/ffmpeg: lib/libaom.a \
 		--enable-libopus \
 		--enable-librav1e \
 		--enable-librtmp \
+		--enable-libsoxr \
 		--enable-libsvtav1 \
 		--enable-libvmaf \
 		--enable-libvpx \
@@ -221,6 +224,12 @@ lib/librtmp.a:
 		CRYPTO= \
 		SHARED= \
 		install
+
+lib/libsoxr.a:
+	cd src/soxr-$(SOXR_VERSION)-Source && \
+	cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(PWD) \
+		-DBUILD_SHARED_LIBS=OFF -DBUILD_TESTS=OFF && \
+	$(MAKE) $(MAKE_ARGS) && $(MAKE) install
 
 lib/libssl.a:
 	cd src/openssl-$(OPENSSL_VERSION) && \
