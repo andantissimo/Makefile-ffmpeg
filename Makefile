@@ -39,7 +39,7 @@ else
 	FONTCONFIG_PATH = /etc/fonts
 endif
 ifeq ($(shell uname),Linux)
-	FFMPEG_LIBS    += -ldl -lpthread
+	FFMPEG_LIBS    += -ldl -lm -lgomp -lpthread
 	FFMPEG_OPTS    += --extra-libs='$(FFMPEG_LIBS)'
 	OPENSSL_ARCH    = linux-generic64
 	MAKE_ARGS      += -j$(shell nproc)
