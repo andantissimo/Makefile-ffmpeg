@@ -32,6 +32,8 @@ else
 	ASS_LIBS        = -lfontconfig -luuid
 endif
 ifeq ($(shell uname),FreeBSD)
+	FFMPEG_LIBS    += -lm -lomp
+	FFMPEG_OPTS    += --extra-libs='$(FFMPEG_LIBS)'
 	FONTCONFIG_PATH = /usr/local/etc/fonts
 	OPENSSL_ARCH    = BSD-x86_64
 	MAKE_ARGS      += -j$(shell sysctl -n hw.ncpu)
@@ -39,7 +41,7 @@ else
 	FONTCONFIG_PATH = /etc/fonts
 endif
 ifeq ($(shell uname),Linux)
-	FFMPEG_LIBS    += -ldl -lm -lgomp -lpthread
+	FFMPEG_LIBS    += -ldl -lgomp -lm -lpthread
 	FFMPEG_OPTS    += --extra-libs='$(FFMPEG_LIBS)'
 	OPENSSL_ARCH    = linux-generic64
 	MAKE_ARGS      += -j$(shell nproc)
