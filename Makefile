@@ -1,26 +1,26 @@
 ## ffmpeg
 
-FFMPEG_VERSION      = 5.0.1
-AOM_VERSION         = 3.3.0
-ASS_VERSION         = 0.15.2
+FFMPEG_VERSION      = 5.1
+AOM_VERSION         = 3.4.0
+ASS_VERSION         = 0.16.0
 DAV1D_VERSION       = 1.0.0
 FDK_AAC_VERSION     = 2.0.2
 FONTCONFIG_VERSION  = 2.14.0
-FREETYPE_VERSION    = 2.12.0
+FREETYPE_VERSION    = 2.12.1
 FRIBIDI_VERSION     = 1.0.12
-HARFBUZZ_VERSION    = 4.2.1
-OPENSSL_VERSION     = 3.0.3
+HARFBUZZ_VERSION    = 5.1.0
+OPENSSL_VERSION     = 3.0.5
 OPUS_VERSION        = 1.3.1
 RAV1E_VERSION       = 0.5.1
 RTMPDUMP_VERSION    = 20150114
 SOXR_VERSION        = 0.1.3
-SVT_AV1_VERSION     = 1.1.0
-UTIL_LINUX_VERSION  = 2.38
+SVT_AV1_VERSION     = 1.2.1
+UTIL_LINUX_VERSION  = 2.38.1
 VMAF_VERSION        = 2.3.1
-VPX_VERSION         = 1.11.0
-X264_VERSION        = 5db6aa6c
+VPX_VERSION         = 1.12.0
+X264_VERSION        = baee400f
 X265_VERSION        = f0c1022b6be1
-XML2_VERSION        = 2.9.12
+XML2_VERSION        = 2.10.0
 ZIMG_VERSION        = 3.0.4
 ifeq ($(shell uname),Darwin)
 	ASS_OPTS        = --disable-fontconfig
@@ -193,9 +193,9 @@ lib/libharfbuzz.a: lib/libfreetype.a
 	export PKG_CONFIG_PATH=$(PWD)/lib/pkgconfig && \
 	meson --prefix=$(PWD) --libdir=$(PWD)/lib \
 		--buildtype release --default-library static \
-		-Dcairo=disabled -Ddocs=disabled -Dfreetype=enabled -Dglib=disabled \
-		-Dgobject=disabled -Dgraphite=disabled -Dicu=disabled \
-		-Dintrospection=disabled -Dtests=disabled \
+		-Dcairo=disabled -Dchafa=disabled -Ddocs=disabled \
+		-Dfreetype=enabled -Dglib=disabled -Dgobject=disabled \
+		-Dicu=disabled -Dintrospection=disabled -Dtests=disabled \
 		$(HARFBUZZ_OPTS) build && \
 	ninja install -C build
 ifeq ($(shell uname),FreeBSD)
@@ -248,13 +248,7 @@ lib/libssl.a:
 	$(MAKE) install_dev
 
 lib/libSvtAv1Enc.a:
-ifeq ($(shell uname),FreeBSD)
-	cd src/SVT-AV1-$(SVT_AV1_VERSION) && \
-	sed -e 's@|AMD64|@|AMD64|amd64|@' \
-	    -e 's@|Darwin|@|Darwin|FreeBSD|@' \
-	    -i'.bak' third_party/cpuinfo/CMakeLists.txt
-endif
-	cd src/SVT-AV1-$(SVT_AV1_VERSION)/Build && \
+	cd src/SVT-AV1-v$(SVT_AV1_VERSION)/Build && \
 	cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(PWD) \
 		-DBUILD_APPS=OFF -DBUILD_SHARED_LIBS=OFF -DBUILD_TESTING=OFF \
 		.. && \
