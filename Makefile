@@ -1,6 +1,6 @@
 ## ffmpeg
 
-FFMPEG_VERSION      = 5.1
+FFMPEG_VERSION      = 5.1.1
 AOM_VERSION         = 3.4.0
 ASS_VERSION         = 0.16.0
 DAV1D_VERSION       = 1.0.0
