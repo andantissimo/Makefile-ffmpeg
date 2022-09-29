@@ -1,14 +1,14 @@
 ## ffmpeg
 
-FFMPEG_VERSION      = 5.1.1
-AOM_VERSION         = 3.4.0
+FFMPEG_VERSION      = 5.1.2
+AOM_VERSION         = 3.5.0
 ASS_VERSION         = 0.16.0
 DAV1D_VERSION       = 1.0.0
 FDK_AAC_VERSION     = 2.0.2
 FONTCONFIG_VERSION  = 2.14.0
 FREETYPE_VERSION    = 2.12.1
 FRIBIDI_VERSION     = 1.0.12
-HARFBUZZ_VERSION    = 5.1.0
+HARFBUZZ_VERSION    = 5.2.0
 OPENSSL_VERSION     = 3.0.5
 OPUS_VERSION        = 1.3.1
 RAV1E_VERSION       = 0.5.1
@@ -20,7 +20,7 @@ VMAF_VERSION        = 2.3.1
 VPX_VERSION         = 1.12.0
 X264_VERSION        = baee400f
 X265_VERSION        = f0c1022b6be1
-XML2_VERSION        = 2.10.0
+XML2_VERSION        = 2.10.2
 ZIMG_VERSION        = 3.0.4
 ifeq ($(shell uname),Darwin)
 	ASS_OPTS        = --disable-fontconfig
