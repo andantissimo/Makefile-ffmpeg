@@ -263,6 +263,10 @@ lib/libSvtAv1Enc.a:
 		cat lib64/pkgconfig/SvtAv1Enc.pc | sed -e 's/lib64/lib/g' \
 		  > lib/pkgconfig/SvtAv1Enc.pc; \
 	fi
+ifeq ($(shell uname),FreeBSD)
+	sed -e 's@^\(Libs:.*\)$$@\1 -lpthread@' \
+	    -i'.bak' lib/pkgconfig/SvtAv1Enc.pc
+endif
 
 lib/libuuid.a:
 	cd src/util-linux-$(UTIL_LINUX_VERSION) && \
