@@ -1,27 +1,28 @@
 ## ffmpeg
 
-FFMPEG_VERSION      = 6.0
-AOM_VERSION         = 3.6.0
-ASS_VERSION         = 0.17.0
-DAV1D_VERSION       = 1.1.0
+FFMPEG_VERSION      = 6.1
+AOM_VERSION         = 3.7.0
+ASS_VERSION         = 0.17.1
+DAV1D_VERSION       = 1.3.0
 FDK_AAC_VERSION     = 2.0.2
-FONTCONFIG_VERSION  = 2.14.1
-FREETYPE_VERSION    = 2.12.1
-FRIBIDI_VERSION     = 1.0.12
-HARFBUZZ_VERSION    = 6.0.0
-OPENSSL_VERSION     = 3.0.7
-OPUS_VERSION        = 1.3.1
-RAV1E_VERSION       = 0.6.3
+FONTCONFIG_VERSION  = 2.14.2
+FREETYPE_VERSION    = 2.13.2
+FRIBIDI_VERSION     = 1.0.13
+HARFBUZZ_VERSION    = 8.3.0
+KVAZAAR_VERSION     = 2.2.0
+OPENSSL_VERSION     = 3.1.4
+OPUS_VERSION        = 1.4
+RAV1E_VERSION       = 0.6.6
 RTMPDUMP_VERSION    = 20150114
 SOXR_VERSION        = 0.1.3
-SVT_AV1_VERSION     = 1.4.1
-UTIL_LINUX_VERSION  = 2.38.1
+SVT_AV1_VERSION     = 1.7.0
+UTIL_LINUX_VERSION  = 2.39.2
 VMAF_VERSION        = 2.3.1
-VPX_VERSION         = 1.13.0
-X264_VERSION        = baee400f
+VPX_VERSION         = 1.13.1
+X264_VERSION        = 31e19f92
 X265_VERSION        = f0c1022b6be1
-XML2_VERSION        = 2.10.3
-ZIMG_VERSION        = 3.0.4
+XML2_VERSION        = 2.11.5
+ZIMG_VERSION        = 3.0.5
 ifeq ($(shell uname),Darwin)
 	ASS_OPTS        = --disable-fontconfig
 	HARFBUZZ_OPTS   = -Dcoretext=enabled
@@ -68,6 +69,7 @@ bin/ffmpeg: lib/libaom.a \
             lib/libfdk-aac.a \
             lib/libfreetype.a \
             lib/libfribidi.a \
+            lib/libkvazaar.a \
             lib/libopus.a \
             lib/librav1e.a \
             lib/librtmp.a \
@@ -97,6 +99,7 @@ bin/ffmpeg: lib/libaom.a \
 		--enable-libfdk-aac \
 		--enable-libfreetype \
 		--enable-libfribidi \
+		--enable-libkvazaar \
 		--enable-libopus \
 		--enable-librav1e \
 		--enable-librtmp \
@@ -188,6 +191,13 @@ lib/libfribidi.a:
 		--enable-static --disable-shared && \
 	$(MAKE) $(MAKE_ARGS) && $(MAKE) install
 
+lib/libkvazaar.a:
+	cd src/kvazaar-$(KVAZAAR_VERSION) && \
+	./autogen.sh && \
+	./configure --prefix=$(PWD) --disable-dependency-tracking \
+		--enable-static --disable-shared && \
+	$(MAKE) $(MAKE_ARGS) && $(MAKE) install
+
 lib/libharfbuzz.a: lib/libfreetype.a
 	cd src/harfbuzz-$(HARFBUZZ_VERSION) && \
 	export PKG_CONFIG_PATH=$(PWD)/lib/pkgconfig && \
@@ -196,6 +206,7 @@ lib/libharfbuzz.a: lib/libfreetype.a
 		-Dcairo=disabled -Dchafa=disabled -Ddocs=disabled \
 		-Dfreetype=enabled -Dglib=disabled -Dgobject=disabled \
 		-Dicu=disabled -Dintrospection=disabled -Dtests=disabled \
+		-Dutilities=disabled \
 		$(HARFBUZZ_OPTS) build && \
 	ninja install -C build
 ifeq ($(shell uname),FreeBSD)
