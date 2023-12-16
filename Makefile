@@ -15,13 +15,13 @@ OPUS_VERSION        = 1.4
 RAV1E_VERSION       = 0.6.6
 RTMPDUMP_VERSION    = 20150114
 SOXR_VERSION        = 0.1.3
-SVT_AV1_VERSION     = 1.7.0
-UTIL_LINUX_VERSION  = 2.39.2
+SVT_AV1_VERSION     = 1.8.0
+UTIL_LINUX_VERSION  = 2.39.3
 VMAF_VERSION        = 2.3.1
 VPX_VERSION         = 1.13.1
 X264_VERSION        = 31e19f92
 X265_VERSION        = f0c1022b6be1
-XML2_VERSION        = 2.11.5
+XML2_VERSION        = 2.12.3
 ZIMG_VERSION        = 3.0.5
 ifeq ($(shell uname),Darwin)
 	ASS_OPTS        = --disable-fontconfig
