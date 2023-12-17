@@ -197,6 +197,10 @@ lib/libkvazaar.a:
 	./configure --prefix=$(PWD) --disable-dependency-tracking \
 		--enable-static --disable-shared && \
 	$(MAKE) $(MAKE_ARGS) && $(MAKE) install
+ifeq ($(shell uname),FreeBSD)
+	sed -e 's@^\(Libs:.*\)$$@\1 -lpthread@' \
+	    -i'.bak' lib/pkgconfig/kvazaar.pc
+endif
 
 lib/libharfbuzz.a: lib/libfreetype.a
 	cd src/harfbuzz-$(HARFBUZZ_VERSION) && \
