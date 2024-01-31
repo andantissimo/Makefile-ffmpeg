@@ -28,6 +28,9 @@ ifeq ($(shell uname),Darwin)
 	HARFBUZZ_OPTS   = -Dcoretext=enabled
 	OPENSSL_ARCH    = darwin64-x86_64-cc
 	MAKE_ARGS      += -j$(shell sysctl -n hw.ncpu)
+ifeq ($(shell uname -m),arm64)
+	SOXR_OPTS       = -DWITH_CR32S=OFF -DWITH_CR64S=OFF
+endif
 else
 	ASS_DEPS        = lib/libfontconfig.a
 	ASS_LIBS        = -lfontconfig -luuid
@@ -245,7 +248,8 @@ lib/librtmp.a:
 lib/libsoxr.a:
 	cd src/soxr-$(SOXR_VERSION)-Source && \
 	cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(PWD) \
-		-DBUILD_SHARED_LIBS=OFF -DBUILD_TESTS=OFF && \
+		-DBUILD_SHARED_LIBS=OFF -DBUILD_TESTS=OFF \
+		$(SOXR_OPTS) && \
 	$(MAKE) $(MAKE_ARGS) && $(MAKE) install
 
 lib/libssl.a:
