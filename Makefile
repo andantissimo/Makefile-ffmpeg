@@ -26,10 +26,12 @@ ZIMG_VERSION        = 3.0.5
 ifeq ($(shell uname),Darwin)
 	ASS_OPTS        = --disable-fontconfig
 	HARFBUZZ_OPTS   = -Dcoretext=enabled
-	OPENSSL_ARCH    = darwin64-x86_64-cc
 	MAKE_ARGS      += -j$(shell sysctl -n hw.ncpu)
 ifeq ($(shell uname -m),arm64)
+	OPENSSL_ARCH    = darwin64-arm64-cc
 	SOXR_OPTS       = -DWITH_CR32S=OFF -DWITH_CR64S=OFF
+else
+	OPENSSL_ARCH    = darwin64-x86_64-cc
 endif
 else
 	ASS_DEPS        = lib/libfontconfig.a
