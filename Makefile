@@ -1,7 +1,7 @@
 ## ffmpeg
 
 FFMPEG_VERSION      = 6.1.1
-AOM_VERSION         = 3.7.0
+AOM_VERSION         = 3.8.1
 ASS_VERSION         = 0.17.1
 DAV1D_VERSION       = 1.3.0
 FDK_AAC_VERSION     = 2.0.3
@@ -9,10 +9,10 @@ FONTCONFIG_VERSION  = 2.15.0
 FREETYPE_VERSION    = 2.13.2
 FRIBIDI_VERSION     = 1.0.13
 HARFBUZZ_VERSION    = 8.3.0
-KVAZAAR_VERSION     = 2.2.0
+KVAZAAR_VERSION     = 2.3.0
 OPENSSL_VERSION     = 3.1.4
 OPUS_VERSION        = 1.4
-RAV1E_VERSION       = 0.6.6
+RAV1E_VERSION       = 0.7.1
 RTMPDUMP_VERSION    = 20150114
 SOXR_VERSION        = 0.1.3
 SVT_AV1_VERSION     = 1.8.0
@@ -21,13 +21,17 @@ VMAF_VERSION        = 3.0.0
 VPX_VERSION         = 1.13.1
 X264_VERSION        = 31e19f92
 X265_VERSION        = ce8642f22123
-XML2_VERSION        = 2.12.3
+XML2_VERSION        = 2.12.4
 ZIMG_VERSION        = 3.0.5
-ifeq ($(shell uname),Darwin)
+
+OS   := $(shell uname -s)
+ARCH := $(shell uname -m)
+
+ifeq ($(OS),Darwin)
 	ASS_OPTS        = --disable-fontconfig
 	HARFBUZZ_OPTS   = -Dcoretext=enabled
 	MAKE_ARGS      += -j$(shell sysctl -n hw.ncpu)
-ifeq ($(shell uname -m),arm64)
+ifeq ($(ARCH),arm64)
 	OPENSSL_ARCH    = darwin64-arm64-cc
 	SOXR_OPTS       = -DWITH_CR32S=OFF -DWITH_CR64S=OFF
 else
@@ -37,7 +41,7 @@ else
 	ASS_DEPS        = lib/libfontconfig.a
 	ASS_LIBS        = -lfontconfig -luuid
 endif
-ifeq ($(shell uname),FreeBSD)
+ifeq ($(OS),FreeBSD)
 	FFMPEG_LIBS    += -lm -lomp
 	FFMPEG_OPTS    += --extra-libs='$(FFMPEG_LIBS)'
 	FONTCONFIG_PATH = /usr/local/etc/fonts
@@ -46,7 +50,7 @@ ifeq ($(shell uname),FreeBSD)
 else
 	FONTCONFIG_PATH = /etc/fonts
 endif
-ifeq ($(shell uname),Linux)
+ifeq ($(OS),Linux)
 	FFMPEG_LIBS    += -ldl -lgomp -lm -lpthread
 	FFMPEG_OPTS    += --extra-libs='$(FFMPEG_LIBS)'
 	OPENSSL_ARCH    = linux-generic64
@@ -61,10 +65,9 @@ endif
 all: bin/ffmpeg
 
 clean:
-	$(RM) -r etc include lib lib64 libdata sbin tmp
-	cd share && $(RM) -r aclocal bash-completion doc gtk-doc locale
-	cd share/ffmpeg && $(RM) -r examples
-	cd share/man && $(RM) -r man3 man5 man7 man8
+	$(RM) -r build include lib lib64 libdata sbin
+	cd share && $(RM) -r aclocal doc ffmpeg/examples locale
+	cd share/man && $(RM) -r man3 man5 man8
 	find bin -type f -not -name 'ff*' -delete
 	find share/man/man1 -not -type d -not -name 'ff*' -delete
 
@@ -87,11 +90,12 @@ bin/ffmpeg: lib/libaom.a \
             lib/libx265.a \
             lib/libxml2.a \
             lib/libzimg.a
-	cd src/ffmpeg-$(FFMPEG_VERSION) && \
+	mkdir -p build/ffmpeg && cd build/ffmpeg && \
 	export CFLAGS=-I$(PWD)/include && \
 	export LDFLAGS=-L$(PWD)/lib && \
 	export PKG_CONFIG_PATH=$(PWD)/lib/pkgconfig && \
-	./configure --prefix=$(PWD) \
+	$(PWD)/src/ffmpeg-$(FFMPEG_VERSION)/configure \
+		--prefix=$(PWD) \
 		--enable-gpl --enable-version3 --enable-nonfree \
 		--enable-static --disable-shared --enable-runtime-cpudetect \
 		--disable-ffplay \
@@ -128,7 +132,7 @@ bin/ffmpeg: lib/libaom.a \
 	$(MAKE) $(MAKE_ARGS) && $(MAKE) install
 
 lib/libaom.a:
-	mkdir -p tmp/libaom && cd tmp/libaom && \
+	mkdir -p build/aom && cd build/aom && \
 	cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(PWD) \
 		-DENABLE_DOCS=OFF -DENABLE_EXAMPLES=OFF \
 		-DENABLE_TESTDATA=OFF -DENABLE_TESTS=OFF -DENABLE_TOOLS=OFF \
@@ -142,10 +146,11 @@ lib/libaom.a:
 	fi
 
 lib/libass.a: lib/libfribidi.a lib/libharfbuzz.a $(ASS_DEPS)
-	cd src/libass-$(ASS_VERSION) && \
+	mkdir -p build/libass && cd build/libass && \
 	export CFLAGS=-I$(PWD)/include && \
 	export PKG_CONFIG_PATH=$(PWD)/lib/pkgconfig && \
-	./configure --prefix=$(PWD) --disable-dependency-tracking \
+	$(PWD)/src/libass-$(ASS_VERSION)/configure \
+		--prefix=$(PWD) --disable-dependency-tracking \
 		--enable-static --disable-shared $(ASS_OPTS) && \
 	sed -e 's@#define CONFIG_ICONV 1@/* #undef CONFIG_ICONV */@' \
 	    -i'.bak' config.h && \
@@ -154,71 +159,105 @@ lib/libass.a: lib/libfribidi.a lib/libharfbuzz.a $(ASS_DEPS)
 	    -i'.bak' lib/pkgconfig/libass.pc
 
 lib/libdav1d.a:
-	cd src/dav1d-$(DAV1D_VERSION) && \
-	meson --prefix=$(PWD) --libdir=$(PWD)/lib \
+	mkdir -p build/dav1d && cd build/dav1d && \
+	meson setup --prefix=$(PWD) --libdir=$(PWD)/lib \
 		--buildtype release --default-library static \
 		-Denable_tools=false -Denable_examples=false -Denable_tests=false \
-		build && \
-	ninja install -C build
-ifeq ($(shell uname),FreeBSD)
+		-Denable_docs=false -Dxxhash_muxer=disabled \
+		. $(PWD)/src/dav1d-$(DAV1D_VERSION) && \
+	ninja install
+ifeq ($(OS),FreeBSD)
+	mkdir -p lib/pkgconfig
 	cat libdata/pkgconfig/dav1d.pc | sed -e 's@^\(Libs:.*\)$$@\1 -lpthread@' \
 	  > lib/pkgconfig/dav1d.pc
 endif
 
 lib/libfdk-aac.a:
-	cd src/fdk-aac-$(FDK_AAC_VERSION) && \
-	./configure --prefix=$(PWD) --disable-dependency-tracking \
-		--enable-static --disable-shared && \
+	mkdir -p build/fdk-aac && cd build/fdk-aac && \
+	cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(PWD) \
+		-DBUILD_PROGRAMS=OFF -DBUILD_SHARED_LIBS=OFF \
+		-DFDK_AAC_INSTALL_CMAKE_CONFIG_MODULE=OFF \
+		$(PWD)/src/fdk-aac-$(FDK_AAC_VERSION) && \
 	$(MAKE) $(MAKE_ARGS) && $(MAKE) install
+	if [ -f lib64/libfdk-aac.a ]; then \
+		mkdir -p lib/pkgconfig; \
+		install -m 644 lib64/libfdk-aac.a lib/libfdk-aac.a; \
+		cat lib64/pkgconfig/fdk-aac.pc | sed -e 's/lib64/lib/g' \
+		  > lib/pkgconfig/fdk-aac.pc; \
+	fi
 
 lib/libfreetype.a:
-	cd src/freetype-$(FREETYPE_VERSION) && \
-	./configure --prefix=$(PWD) --enable-static --disable-shared \
-		--without-zlib --without-bzip2 --without-png --without-harfbuzz \
-		--without-brotli && \
+	mkdir -p build/freetype && cd build/freetype && \
+	cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(PWD) \
+		-DBUILD_SHARED_LIBS=OFF \
+		-DFT_DISABLE_BROTLI=ON \
+		-DFT_DISABLE_BZIP2=ON \
+		-DFT_DISABLE_HARFBUZZ=ON \
+		-DFT_DISABLE_PNG=ON \
+		-DFT_DISABLE_ZLIB=ON \
+		$(PWD)/src/freetype-$(FREETYPE_VERSION) && \
 	$(MAKE) $(MAKE_ARGS) && $(MAKE) install
+	if [ -f lib64/libfreetype.a ]; then \
+		mkdir -p lib/pkgconfig; \
+		install -m 644 lib64/libfreetype.a lib/libfreetype.a; \
+		cat lib64/pkgconfig/freetype2.pc | sed -e 's/lib64/lib/g' \
+		  > lib/pkgconfig/freetype2.pc; \
+	fi
 
 lib/libfontconfig.a: lib/libfreetype.a lib/libuuid.a lib/libxml2.a
-	cd src/fontconfig-$(FONTCONFIG_VERSION) && \
+	mkdir -p build/fontconfig && cd build/fontconfig && \
 	export CFLAGS=-I$(PWD)/include && \
 	export PKG_CONFIG_PATH=$(PWD)/lib/pkgconfig && \
-	./configure --prefix=$(PWD) --with-baseconfigdir=$(FONTCONFIG_PATH) \
+	$(PWD)/src/fontconfig-$(FONTCONFIG_VERSION)/configure \
+		--prefix=$(PWD) --with-baseconfigdir=$(FONTCONFIG_PATH) \
 		--disable-dependency-tracking --enable-static --disable-shared \
 		--disable-docs --enable-libxml2 && \
 	$(MAKE) -C fontconfig install && \
-	$(MAKE) -C src $(MAKE_ARGS) && $(MAKE) -C src install
-	cat src/fontconfig-$(FONTCONFIG_VERSION)/fontconfig.pc \
-	  > lib/pkgconfig/fontconfig.pc
+	$(MAKE) -C src $(MAKE_ARGS) && $(MAKE) -C src install && \
+	$(MAKE) install-pkgconfigDATA
 
 lib/libfribidi.a:
-	cd src/fribidi-$(FRIBIDI_VERSION) && \
-	./configure --prefix=$(PWD) --disable-dependency-tracking \
-		--enable-static --disable-shared && \
-	$(MAKE) $(MAKE_ARGS) && $(MAKE) install
+	mkdir -p build/fribidi && cd build/fribidi && \
+	meson setup --prefix=$(PWD) --libdir=$(PWD)/lib \
+		--buildtype release --default-library static \
+		-Ddeprecated=false -Ddocs=false -Dbin=false -Dtests=false \
+		. $(PWD)/src/fribidi-$(FRIBIDI_VERSION) && \
+	ninja install
+ifeq ($(OS),FreeBSD)
+	mkdir -p lib/pkgconfig
+	cat libdata/pkgconfig/fribidi.pc \
+	  > lib/pkgconfig/fribidi.pc
+endif
 
 lib/libkvazaar.a:
+	mkdir -p include lib/pkgconfig
 	cd src/kvazaar-$(KVAZAAR_VERSION) && \
-	./autogen.sh && \
-	./configure --prefix=$(PWD) --disable-dependency-tracking \
-		--enable-static --disable-shared && \
-	$(MAKE) $(MAKE_ARGS) && $(MAKE) install
-ifeq ($(shell uname),FreeBSD)
+	cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(PWD) \
+		-DBUILD_SHARED_LIBS=OFF -DBUILD_TESTS=OFF \
+		. && \
+	$(MAKE) $(MAKE_ARGS) && \
+	install -m 644 src/kvazaar.h $(PWD)/include/kvazaar.h && \
+	install -m 644 src/kvazaar.pc $(PWD)/lib/pkgconfig/kvazaar.pc && \
+	install -m 644 libkvazaar.a $(PWD)/lib/libkvazaar.a
+ifeq ($(OS),FreeBSD)
 	sed -e 's@^\(Libs:.*\)$$@\1 -lpthread@' \
 	    -i'.bak' lib/pkgconfig/kvazaar.pc
 endif
 
 lib/libharfbuzz.a: lib/libfreetype.a
-	cd src/harfbuzz-$(HARFBUZZ_VERSION) && \
+	mkdir -p build/harfbuzz && cd build/harfbuzz && \
 	export PKG_CONFIG_PATH=$(PWD)/lib/pkgconfig && \
-	meson --prefix=$(PWD) --libdir=$(PWD)/lib \
+	meson setup --prefix=$(PWD) --libdir=$(PWD)/lib \
 		--buildtype release --default-library static \
 		-Dcairo=disabled -Dchafa=disabled -Ddocs=disabled \
 		-Dfreetype=enabled -Dglib=disabled -Dgobject=disabled \
 		-Dicu=disabled -Dintrospection=disabled -Dtests=disabled \
 		-Dutilities=disabled \
-		$(HARFBUZZ_OPTS) build && \
-	ninja install -C build
-ifeq ($(shell uname),FreeBSD)
+		$(HARFBUZZ_OPTS) \
+		. $(PWD)/src/harfbuzz-$(HARFBUZZ_VERSION) && \
+	ninja install
+ifeq ($(OS),FreeBSD)
+	mkdir -p lib/pkgconfig
 	cat libdata/pkgconfig/harfbuzz.pc \
 	  > lib/pkgconfig/harfbuzz.pc
 endif
@@ -248,18 +287,18 @@ lib/librtmp.a:
 		install
 
 lib/libsoxr.a:
-	cd src/soxr-$(SOXR_VERSION)-Source && \
+	mkdir -p build/soxr && cd build/soxr && \
 	cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(PWD) \
-		-DBUILD_SHARED_LIBS=OFF -DBUILD_TESTS=OFF \
-		$(SOXR_OPTS) && \
+		-DBUILD_SHARED_LIBS=OFF -DBUILD_TESTS=OFF $(SOXR_OPTS) \
+		$(PWD)/src/soxr-$(SOXR_VERSION)-Source && \
 	$(MAKE) $(MAKE_ARGS) && $(MAKE) install
 
 lib/libssl.a:
-	cd src/openssl-$(OPENSSL_VERSION) && \
-	perl ./Configure --prefix=$(PWD) --openssldir=$(OPENSSL_DIR) \
+	mkdir -p build/openssl && cd build/openssl && \
+	perl $(PWD)/src/openssl-$(OPENSSL_VERSION)/Configure \
+		--prefix=$(PWD) --openssldir=$(OPENSSL_DIR) \
 		no-shared \
 		no-comp \
-		no-ssl2 \
 		no-ssl3 \
 		no-zlib \
 		enable-cms \
@@ -269,29 +308,26 @@ lib/libssl.a:
 	$(MAKE) install_dev
 
 lib/libSvtAv1Enc.a:
-	cd src/SVT-AV1-v$(SVT_AV1_VERSION)/Build && \
+	mkdir -p build/SVT-AV1 && cd build/SVT-AV1 && \
 	cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(PWD) \
-		-DBUILD_APPS=OFF -DBUILD_SHARED_LIBS=OFF -DBUILD_TESTING=OFF \
-		.. && \
-	$(MAKE) $(MAKE_ARGS) && \
-	$(MAKE) install
+		-DBUILD_APPS=OFF -DBUILD_DEC=OFF -DBUILD_SHARED_LIBS=OFF \
+		$(PWD)/src/SVT-AV1-v$(SVT_AV1_VERSION) && \
+	$(MAKE) $(MAKE_ARGS) && $(MAKE) install
 	if [ -f lib64/libSvtAv1Enc.a ]; then \
 		mkdir -p lib/pkgconfig; \
-		install -m 644 lib64/libSvtAv1Dec.a lib/libSvtAv1Dec.a; \
 		install -m 644 lib64/libSvtAv1Enc.a lib/libSvtAv1Enc.a; \
-		cat lib64/pkgconfig/SvtAv1Dec.pc | sed -e 's/lib64/lib/g' \
-		  > lib/pkgconfig/SvtAv1Dec.pc; \
 		cat lib64/pkgconfig/SvtAv1Enc.pc | sed -e 's/lib64/lib/g' \
 		  > lib/pkgconfig/SvtAv1Enc.pc; \
 	fi
-ifeq ($(shell uname),FreeBSD)
+ifeq ($(OS),FreeBSD)
 	sed -e 's@^\(Libs:.*\)$$@\1 -lpthread@' \
 	    -i'.bak' lib/pkgconfig/SvtAv1Enc.pc
 endif
 
 lib/libuuid.a:
-	cd src/util-linux-$(UTIL_LINUX_VERSION) && \
-	./configure --prefix=$(PWD) --disable-dependency-tracking \
+	mkdir -p build/util-linux && cd build/util-linux && \
+	$(PWD)/src/util-linux-$(UTIL_LINUX_VERSION)/configure \
+		--prefix=$(PWD) --disable-dependency-tracking \
 		--enable-static --disable-shared \
 		--disable-all-programs --disable-asciidoc --disable-libblkid \
 		--disable-libmount --disable-libsmartcols --disable-libfdisks \
@@ -305,39 +341,41 @@ lib/libuuid.a:
 	$(MAKE) $(MAKE_ARGS) && $(MAKE) install
 
 lib/libvmaf.a:
-ifeq ($(shell uname),FreeBSD)
+ifeq ($(OS),FreeBSD)
 	sed -e 's@_POSIX_C_SOURCE=200112L@_XOPEN_SOURCE=600@' \
 	    -i'.bak' src/vmaf-$(VMAF_VERSION)/libvmaf/meson.build
 endif
-	cd src/vmaf-$(VMAF_VERSION)/libvmaf && \
-	meson --prefix=$(PWD) --libdir=$(PWD)/lib \
+	mkdir -p build/vmaf && cd build/vmaf && \
+	meson setup --prefix=$(PWD) --libdir=$(PWD)/lib \
 		--buildtype=release --default-library=static \
 		-Denable_tests=false -Denable_docs=false \
-		build && \
-	ninja install -C build
+		. $(PWD)/src/vmaf-$(VMAF_VERSION)/libvmaf && \
+	ninja install
 	$(RM) lib/libvmaf.*dylib
 	$(RM) lib/libvmaf.so*
-ifeq ($(shell uname),Darwin)
+ifeq ($(OS),Darwin)
 	sed -e 's@^\(Libs:.*\)$$@\1 -lc++ -lc++abi@' \
 	    -i'.bak' lib/pkgconfig/libvmaf.pc
 endif
-ifeq ($(shell uname),Linux)
+ifeq ($(OS),Linux)
 	sed -e 's@^\(Libs:.*\)$$@\1 -lstdc++ -lm@' \
 	    -i'.bak' lib/pkgconfig/libvmaf.pc
 endif
-ifeq ($(shell uname),FreeBSD)
+ifeq ($(OS),FreeBSD)
+	mkdir -p lib/pkgconfig
 	cat libdata/pkgconfig/libvmaf.pc | \
 	sed -e 's@^\(Libs:.*\)$$@\1 -lc++ -lm -lpthread@' \
 	  > lib/pkgconfig/libvmaf.pc
 endif
 
 lib/libvpx.a:
-ifeq ($(shell uname),FreeBSD)
+ifeq ($(OS),FreeBSD)
 	sed -e 's@diff --version@hash diff@' \
 	    -i'.bak' src/libvpx-$(VPX_VERSION)/configure
 endif
-	cd src/libvpx-$(VPX_VERSION) && \
-	./configure --prefix=$(PWD) --disable-dependency-tracking \
+	mkdir -p build/libvpx && cd build/libvpx && \
+	$(PWD)/src/libvpx-$(VPX_VERSION)/configure \
+		--prefix=$(PWD) --disable-dependency-tracking \
 		--enable-static --disable-shared \
 		--disable-examples --disable-docs --disable-unit-tests \
 		--disable-decode-perf-tests --disable-encode-perf-tests \
@@ -347,13 +385,14 @@ endif
 	    -i'.bak' lib/pkgconfig/vpx.pc
 
 lib/libx264.a:
-	cd src/x264-$(X264_VERSION) && \
-	./configure --prefix=$(PWD) --enable-static --disable-shared \
+	mkdir -p build/x264 && cd build/x264 && \
+	$(PWD)/src/x264-$(X264_VERSION)/configure \
+		--prefix=$(PWD) --enable-static --disable-shared \
 		--enable-strip --enable-pic --disable-cli && \
 	$(MAKE) $(MAKE_ARGS) && $(MAKE) install
 
 lib/libx265_main10.a:
-	mkdir -p lib tmp/x265/main10 && cd tmp/x265/main10 && \
+	mkdir -p lib build/x265/main10 && cd build/x265/main10 && \
 	cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(PWD) \
 		-DENABLE_CLI=OFF -DENABLE_SHARED=OFF -DEXPORT_C_API=OFF \
 		-DHIGH_BIT_DEPTH=ON -DENABLE_HDR10_PLUS=ON \
@@ -362,7 +401,7 @@ lib/libx265_main10.a:
 	install -m 644 libx265.a $(PWD)/lib/libx265_main10.a
 
 lib/libx265_main12.a:
-	mkdir -p lib tmp/x265/main12 && cd tmp/x265/main12 && \
+	mkdir -p lib build/x265/main12 && cd build/x265/main12 && \
 	cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(PWD) \
 		-DENABLE_CLI=OFF -DENABLE_SHARED=OFF -DEXPORT_C_API=OFF \
 		-DHIGH_BIT_DEPTH=ON -DMAIN12=ON \
@@ -371,7 +410,7 @@ lib/libx265_main12.a:
 	install -m 644 libx265.a $(PWD)/lib/libx265_main12.a
 
 lib/libx265_main.a: lib/libx265_main10.a lib/libx265_main12.a
-	mkdir -p lib tmp/x265/main && cd tmp/x265/main && \
+	mkdir -p lib build/x265/main && cd build/x265/main && \
 	cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(PWD) \
 		-DENABLE_CLI=OFF -DENABLE_SHARED=OFF \
 		-DEXTRA_LIB="x265_main10.a;x265_main12.a" \
@@ -381,7 +420,7 @@ lib/libx265_main.a: lib/libx265_main10.a lib/libx265_main12.a
 	$(MAKE) $(MAKE_ARGS) && \
 	install -m 644 libx265.a $(PWD)/lib/libx265_main.a
 
-tmp/x265.ar: lib/libx265_main.a lib/libx265_main10.a lib/libx265_main12.a
+build/x265.ar: lib/libx265_main.a lib/libx265_main10.a lib/libx265_main12.a
 	echo CREATE lib/libx265.a > $@
 	echo ADDLIB lib/libx265_main.a >> $@
 	echo ADDLIB lib/libx265_main10.a >> $@
@@ -389,41 +428,57 @@ tmp/x265.ar: lib/libx265_main.a lib/libx265_main10.a lib/libx265_main12.a
 	echo SAVE >> $@
 	echo END >> $@
 
-lib/libx265.a: tmp/x265.ar
+lib/libx265.a: build/x265.ar
 	mkdir -p include lib/pkgconfig
 	install -m 644 src/multicoreware-x265_git-$(X265_VERSION)/source/x265.h include/x265.h
-	install -m 644 tmp/x265/main/x265_config.h include/x265_config.h
-ifeq ($(shell uname),Darwin)
+	install -m 644 build/x265/main/x265_config.h include/x265_config.h
+ifeq ($(OS),Darwin)
 	libtool -static -o lib/libx265.a \
 		lib/libx265_main.a lib/libx265_main10.a lib/libx265_main12.a
 else
-	ar -M < tmp/x265.ar
+	ar -M < build/x265.ar
 	ranlib lib/libx265.a
 endif
-ifeq ($(shell uname),Linux)
-	cat tmp/x265/main/x265.pc | \
+ifeq ($(OS),Linux)
+	cat build/x265/main/x265.pc | \
 	sed -e 's@^\(Libs:.*\)$$@\1 -lstdc++ -lm -ldl -lpthread@' \
 	  > lib/pkgconfig/x265.pc
 else
-	cat tmp/x265/main/x265.pc | \
+	cat build/x265/main/x265.pc | \
 	sed -e 's@^\(Libs:.*\)$$@\1 -lc++ -lm -ldl -lpthread@' \
 	  > lib/pkgconfig/x265.pc
 endif
 
 lib/libxml2.a:
-	cd src/libxml2-$(XML2_VERSION) && \
-	./configure --prefix=$(PWD) --disable-dependency-tracking \
-		--enable-static --disable-shared \
-		--without-c14n --without-catalog --without-debug \
-		--without-fexceptions --without-ftp --without-history --without-html \
-		--without-http --without-iconv --without-icu --without-iso8859x \
-		--without-legacy --without-mem-debug --with-minimum --without-output \
-		--without-pattern --with-push --without-python --without-reader \
-		--without-readline --without-regexps --without-run-debug --with-sax1 \
-		--without-schemas --without-schematron --without-threads --with-tree \
-		--without-valid --without-writer --without-xinclude --without-xpath \
-		--without-xptr --without-modules --without-zlib --without-lzma \
-		--without-coverage && \
+	mkdir -p build/libxml2 && cd build/libxml2 && \
+	cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(PWD) \
+		-DBUILD_SHARED_LIBS=OFF \
+		-DLIBXML2_WITH_C14N=OFF \
+		-DLIBXML2_WITH_CATALOG=OFF \
+		-DLIBXML2_WITH_DEBUG=OFF \
+		-DLIBXML2_WITH_HTML=OFF \
+		-DLIBXML2_WITH_HTTP=OFF \
+		-DLIBXML2_WITH_ICONV=OFF \
+		-DLIBXML2_WITH_ISO8859X=OFF \
+		-DLIBXML2_WITH_LZMA=OFF \
+		-DLIBXML2_WITH_MODULES=OFF \
+		-DLIBXML2_WITH_OUTPUT=OFF \
+		-DLIBXML2_WITH_PATTERN=OFF \
+		-DLIBXML2_WITH_PROGRAMS=OFF \
+		-DLIBXML2_WITH_PYTHON=OFF \
+		-DLIBXML2_WITH_READER=OFF \
+		-DLIBXML2_WITH_REGEXPS=OFF \
+		-DLIBXML2_WITH_SCHEMAS=OFF \
+		-DLIBXML2_WITH_SCHEMATRON=OFF \
+		-DLIBXML2_WITH_TESTS=OFF \
+		-DLIBXML2_WITH_THREADS=OFF \
+		-DLIBXML2_WITH_VALID=OFF \
+		-DLIBXML2_WITH_WRITER=OFF \
+		-DLIBXML2_WITH_XINCLUDE=OFF \
+		-DLIBXML2_WITH_XPATH=OFF \
+		-DLIBXML2_WITH_XPTR=OFF \
+		-DLIBXML2_WITH_ZLIB=OFF \
+		$(PWD)/src/libxml2-$(XML2_VERSION) && \
 	$(MAKE) $(MAKE_ARGS) && $(MAKE) install
 
 lib/libzimg.a:
