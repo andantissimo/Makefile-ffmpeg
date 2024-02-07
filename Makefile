@@ -186,7 +186,7 @@ lib/libfdk-aac.a:
 		  > lib/pkgconfig/fdk-aac.pc; \
 	fi
 
-lib/libfreetype.a:
+lib/libfreetype.a: lib/libxml2.a
 	mkdir -p build/freetype && cd build/freetype && \
 	cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(PWD) \
 		-DBUILD_SHARED_LIBS=OFF \
@@ -480,6 +480,12 @@ lib/libxml2.a:
 		-DLIBXML2_WITH_ZLIB=OFF \
 		$(PWD)/src/libxml2-$(XML2_VERSION) && \
 	$(MAKE) $(MAKE_ARGS) && $(MAKE) install
+	if [ -f lib64/libxml2.a ]; then \
+		mkdir -p lib/pkgconfig; \
+		install -m 644 lib64/libxml2.a lib/libxml2.a; \
+		cat lib64/pkgconfig/libxml-2.0.pc | sed -e 's/lib64/lib/g' \
+		  > lib/pkgconfig/libxml-2.0.pc; \
+	fi
 
 lib/libzimg.a:
 	cd src/zimg-release-$(ZIMG_VERSION) && \
