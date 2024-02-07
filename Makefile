@@ -34,12 +34,15 @@ ifeq ($(OS),Darwin)
 ifeq ($(ARCH),arm64)
 	OPENSSL_ARCH    = darwin64-arm64-cc
 	SOXR_OPTS       = -DWITH_CR32S=OFF -DWITH_CR64S=OFF
+	VPX_OPTS        = --disable-runtime-cpu-detect
 else
 	OPENSSL_ARCH    = darwin64-x86_64-cc
+	VPX_OPTS        = --enable-runtime-cpu-detect
 endif
 else
 	ASS_DEPS        = lib/libfontconfig.a
 	ASS_LIBS        = -lfontconfig -luuid
+	VPX_OPTS        = --enable-runtime-cpu-detect
 endif
 ifeq ($(OS),FreeBSD)
 	FFMPEG_LIBS    += -lm -lomp
@@ -252,8 +255,7 @@ lib/libharfbuzz.a: lib/libfreetype.a
 		-Dcairo=disabled -Dchafa=disabled -Ddocs=disabled \
 		-Dfreetype=enabled -Dglib=disabled -Dgobject=disabled \
 		-Dicu=disabled -Dintrospection=disabled -Dtests=disabled \
-		-Dutilities=disabled \
-		$(HARFBUZZ_OPTS) \
+		-Dutilities=disabled $(HARFBUZZ_OPTS) \
 		. $(PWD)/src/harfbuzz-$(HARFBUZZ_VERSION) && \
 	ninja install
 ifeq ($(OS),FreeBSD)
@@ -379,7 +381,7 @@ endif
 		--enable-static --disable-shared \
 		--disable-examples --disable-docs --disable-unit-tests \
 		--disable-decode-perf-tests --disable-encode-perf-tests \
-		--enable-vp9-highbitdepth --enable-runtime-cpu-detect && \
+		--enable-vp9-highbitdepth $(VPX_OPTS) && \
 	$(MAKE) $(MAKE_ARGS) && $(MAKE) install
 	sed -e 's@^\(Libs:.*\)$$@\1 -lpthread@' \
 	    -i'.bak' lib/pkgconfig/vpx.pc
