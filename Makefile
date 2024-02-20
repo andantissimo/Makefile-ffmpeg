@@ -235,6 +235,8 @@ endif
 lib/libkvazaar.a:
 	mkdir -p include lib/pkgconfig
 	cd src/kvazaar-$(KVAZAAR_VERSION) && \
+	curl https://github.com/ultravideo/kvazaar/commit/d8c9688.patch \
+	   | patch -p1 && \
 	cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(PWD) \
 		-DBUILD_SHARED_LIBS=OFF -DBUILD_TESTS=OFF \
 		. && \
