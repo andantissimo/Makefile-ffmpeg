@@ -1,27 +1,28 @@
 ## ffmpeg
 
-FFMPEG_VERSION      = 6.1.1
-AOM_VERSION         = 3.8.1
-ASS_VERSION         = 0.17.1
-DAV1D_VERSION       = 1.3.0
+FFMPEG_VERSION      = 6.1.2
+AOM_VERSION         = 3.11.0
+ASS_VERSION         = 0.17.3
+DAV1D_VERSION       = 1.5.0
 FDK_AAC_VERSION     = 2.0.3
 FONTCONFIG_VERSION  = 2.15.0
-FREETYPE_VERSION    = 2.13.2
-FRIBIDI_VERSION     = 1.0.13
-HARFBUZZ_VERSION    = 8.3.0
+FREETYPE_VERSION    = 2.13.3
+FRIBIDI_VERSION     = 1.0.16
+HARFBUZZ_VERSION    = 10.2.0
 KVAZAAR_VERSION     = 2.3.0
-OPENSSL_VERSION     = 3.1.4
-OPUS_VERSION        = 1.4
+OPENSSL_VERSION     = 3.4.0
+OPUS_VERSION        = 1.5.2
 RAV1E_VERSION       = 0.7.1
 RTMPDUMP_VERSION    = 20150114
 SOXR_VERSION        = 0.1.3
-SVT_AV1_VERSION     = 1.8.0
-UTIL_LINUX_VERSION  = 2.39.3
+SRT_VERSION         = 1.5.4
+SVT_AV1_VERSION     = 2.3.0
+UTIL_LINUX_VERSION  = 2.40.4
 VMAF_VERSION        = 3.0.0
-VPX_VERSION         = 1.13.1
+VPX_VERSION         = 1.15.0
 X264_VERSION        = 31e19f92
-X265_VERSION        = ce8642f22123
-XML2_VERSION        = 2.12.4
+X265_VERSION        = 4.1
+XML2_VERSION        = 2.13.5
 ZIMG_VERSION        = 3.0.5
 
 OS   := $(shell uname -s)
@@ -85,6 +86,7 @@ bin/ffmpeg: lib/libaom.a \
             lib/librav1e.a \
             lib/librtmp.a \
             lib/libsoxr.a \
+            lib/libsrt.a \
             lib/libssl.a \
             lib/libSvtAv1Enc.a \
             lib/libvmaf.a \
@@ -116,6 +118,7 @@ bin/ffmpeg: lib/libaom.a \
 		--enable-librav1e \
 		--enable-librtmp \
 		--enable-libsoxr \
+		--enable-libsrt \
 		--enable-libsvtav1 \
 		--enable-libvmaf \
 		--enable-libvpx \
@@ -310,6 +313,39 @@ lib/libssl.a:
 	$(MAKE) depend && \
 	$(MAKE) $(MAKE_ARGS) && \
 	$(MAKE) install_dev
+ifeq ($(OS),FreeBSD)
+	sed -e 's@^\(Libs:.*\)$$@\1 -pthread@' \
+	    -i'.bak' lib/pkgconfig/libcrypto.pc
+endif
+
+lib/libsrt.a: lib/libssl.a
+	mkdir -p build/srt && cd build/srt && \
+	cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(PWD) \
+		-DENABLE_APPS=OFF -DENABLE_SHARED=OFF -DENABLE_STATIC=ON \
+		-DOPENSSL_USE_STATIC_LIBS=ON \
+		$(PWD)/src/srt-$(SRT_VERSION) && \
+	$(MAKE) $(MAKE_ARGS) && $(MAKE) install
+	if [ -f lib64/libsrt.a ]; then \
+		mkdir -p lib/pkgconfig; \
+		install -m 644 lib64/libsrt.a lib/libsrt.a; \
+		cat lib64/pkgconfig/srt.pc | sed -e 's/lib64/lib/g' \
+		  > lib/pkgconfig/srt.pc; \
+	fi
+ifeq ($(OS),Darwin)
+	sed -e 's@^\(Libs:.*\)$$@\1 -lc++@' \
+	    -e 's@^Requires.private:@Requires:@' \
+	    -i'.bak' lib/pkgconfig/srt.pc
+endif
+ifeq ($(OS),FreeBSD)
+	sed -e 's@^\(Libs:.*\)$$@\1 -lc++ -lpthread@' \
+	    -e 's@^Requires.private:@Requires:@' \
+	    -i'.bak' lib/pkgconfig/srt.pc
+endif
+ifeq ($(OS),Linux)
+	sed -e 's@^\(Libs:.*\)$$@\1 -lstdc++ -lm -lpthread@' \
+	    -e 's@^Requires.private:@Requires:@' \
+	    -i'.bak' lib/pkgconfig/srt.pc
+endif
 
 lib/libSvtAv1Enc.a:
 	mkdir -p build/SVT-AV1 && cd build/SVT-AV1 && \
@@ -361,15 +397,15 @@ ifeq ($(OS),Darwin)
 	sed -e 's@^\(Libs:.*\)$$@\1 -lc++ -lc++abi@' \
 	    -i'.bak' lib/pkgconfig/libvmaf.pc
 endif
-ifeq ($(OS),Linux)
-	sed -e 's@^\(Libs:.*\)$$@\1 -lstdc++ -lm@' \
-	    -i'.bak' lib/pkgconfig/libvmaf.pc
-endif
 ifeq ($(OS),FreeBSD)
 	mkdir -p lib/pkgconfig
 	cat libdata/pkgconfig/libvmaf.pc | \
 	sed -e 's@^\(Libs:.*\)$$@\1 -lc++ -lm -lpthread@' \
 	  > lib/pkgconfig/libvmaf.pc
+endif
+ifeq ($(OS),Linux)
+	sed -e 's@^\(Libs:.*\)$$@\1 -lstdc++ -lm@' \
+	    -i'.bak' lib/pkgconfig/libvmaf.pc
 endif
 
 lib/libvpx.a:
@@ -400,7 +436,7 @@ lib/libx265_main10.a:
 	cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(PWD) \
 		-DENABLE_CLI=OFF -DENABLE_SHARED=OFF -DEXPORT_C_API=OFF \
 		-DHIGH_BIT_DEPTH=ON -DENABLE_HDR10_PLUS=ON \
-		$(PWD)/src/multicoreware-x265_git-$(X265_VERSION)/source && \
+		$(PWD)/src/x265_$(X265_VERSION)/source && \
 	$(MAKE) $(MAKE_ARGS) && \
 	install -m 644 libx265.a $(PWD)/lib/libx265_main10.a
 
@@ -409,7 +445,7 @@ lib/libx265_main12.a:
 	cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$(PWD) \
 		-DENABLE_CLI=OFF -DENABLE_SHARED=OFF -DEXPORT_C_API=OFF \
 		-DHIGH_BIT_DEPTH=ON -DMAIN12=ON \
-		$(PWD)/src/multicoreware-x265_git-$(X265_VERSION)/source && \
+		$(PWD)/src/x265_$(X265_VERSION)/source && \
 	$(MAKE) $(MAKE_ARGS) && \
 	install -m 644 libx265.a $(PWD)/lib/libx265_main12.a
 
@@ -420,7 +456,7 @@ lib/libx265_main.a: lib/libx265_main10.a lib/libx265_main12.a
 		-DEXTRA_LIB="x265_main10.a;x265_main12.a" \
 		-DEXTRA_LINK_FLAGS="-L$(PWD)/lib" \
 		-DLINKED_10BIT=ON -DLINKED_12BIT=ON \
-		$(PWD)/src/multicoreware-x265_git-$(X265_VERSION)/source && \
+		$(PWD)/src/x265_$(X265_VERSION)/source && \
 	$(MAKE) $(MAKE_ARGS) && \
 	install -m 644 libx265.a $(PWD)/lib/libx265_main.a
 
@@ -434,7 +470,7 @@ build/x265.ar: lib/libx265_main.a lib/libx265_main10.a lib/libx265_main12.a
 
 lib/libx265.a: build/x265.ar
 	mkdir -p include lib/pkgconfig
-	install -m 644 src/multicoreware-x265_git-$(X265_VERSION)/source/x265.h include/x265.h
+	install -m 644 src/x265_$(X265_VERSION)/source/x265.h include/x265.h
 	install -m 644 build/x265/main/x265_config.h include/x265_config.h
 ifeq ($(OS),Darwin)
 	libtool -static -o lib/libx265.a \
